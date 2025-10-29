@@ -31,10 +31,14 @@ async function importKey(passphrase: string) {
 
 async function deriveAesKey(passphrase: string, salt: Uint8Array) {
   const keyMaterial = await importKey(passphrase);
+  const normalizedSalt = salt.buffer.slice(
+    salt.byteOffset,
+    salt.byteOffset + salt.byteLength,
+  ) as ArrayBuffer;
   return crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
-      salt,
+      salt: normalizedSalt,
       iterations: 100_000,
       hash: "SHA-256",
     },

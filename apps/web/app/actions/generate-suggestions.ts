@@ -6,11 +6,12 @@ import { revalidatePath } from "next/cache";
 import { calculateRelationshipScore } from "@linq/insights";
 
 import { suggestionTemplates } from "../data/templates";
+import {
+  COUPLE_MODE_COOKIE,
+  SUGGESTION_COOKIE,
+  WEEKLY_GOAL_COOKIE,
+} from "../lib/suggestion-cookies";
 import type { OnboardingPayload, Person, Suggestion } from "../lib/types";
-
-const SUGGESTION_COOKIE = "linq-top-suggestions";
-const WEEKLY_GOAL_COOKIE = "linq-weekly-goal";
-const COUPLE_MODE_COOKIE = "linq-couple-mode";
 
 function normalizePerson(person: Person) {
   return {
@@ -70,7 +71,7 @@ function buildSuggestion(person: Person, templateId: string, rationale: string):
 }
 
 export async function generateFirstWeekSuggestions(payload: OnboardingPayload & { coupleMode?: boolean }) {
-  const { selectedPeople, routine, weeklyGoal, coupleMode } = payload;
+  const { selectedPeople, weeklyGoal, coupleMode } = payload;
   const suggestions: Suggestion[] = [];
 
   selectedPeople.slice(0, 12).forEach((person) => {
@@ -108,32 +109,3 @@ export async function generateFirstWeekSuggestions(payload: OnboardingPayload & 
   return trimmed;
 }
 
-export function getSuggestionsFromCookies() {
-  const cookieStore = cookies();
-  const raw = cookieStore.get(SUGGESTION_COOKIE)?.value;
-  if (!raw) {
-    return [];
-  }
-  try {
-    return JSON.parse(raw) as Suggestion[];
-  } catch (error) {
-    console.error("Failed to parse suggestions cookie", error);
-    return [];
-  }
-}
-
-export function getWeeklyGoalFromCookies() {
-  const raw = cookies().get(WEEKLY_GOAL_COOKIE)?.value;
-  if (!raw) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return undefined;
-  }
-}
-
-export function getCoupleModeFromCookies() {
-  return cookies().get(COUPLE_MODE_COOKIE)?.value === "on";
-}

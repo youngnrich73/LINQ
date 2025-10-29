@@ -1,10 +1,10 @@
-import { RelationshipRadar, TopSuggestionsCard } from "@linq/ui";
+import { RelationshipRadar, TopSuggestionsCard, type RelationshipRadarDatum } from "@linq/ui";
 
 import {
   getCoupleModeFromCookies,
   getSuggestionsFromCookies,
   getWeeklyGoalFromCookies,
-} from "./actions/generate-suggestions";
+} from "./lib/suggestion-cookies";
 import { SoftReminderBanner } from "./components/soft-reminder-banner";
 import { WeeklyCheckInCard } from "./components/weekly-check-in-card";
 
@@ -38,7 +38,7 @@ export default function HomePage() {
           sentimentLabel: "Cold",
         },
       ]
-  ).map((entry, index) => ({
+  ).map<RelationshipRadarDatum>((entry, index) => ({
     id: entry.id,
     name: entry.personName,
     recencyDays: 5 + index * 7,
