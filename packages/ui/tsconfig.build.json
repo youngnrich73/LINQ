@@ -1,0 +1,6 @@
+{
+  "extends": "@linq/config/tsconfig/library.json",
+  "compilerOptions": {
+    "noEmit": false
+  }
+}

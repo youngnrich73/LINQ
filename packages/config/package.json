@@ -1,0 +1,11 @@
+{
+  "name": "@linq/config",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./eslint": "./eslint/index.js",
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/next.json": "./tsconfig/next.json",
+    "./tsconfig/library.json": "./tsconfig/library.json"
+  }
+}

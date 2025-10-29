@@ -1,0 +1,9 @@
+{
+  "extends": "@linq/config/tsconfig/next.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/components/*": ["app/components/*"]
+    }
+  }
+}
