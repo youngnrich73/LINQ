@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ["@linq/config/eslint"],
+  extends: [require.resolve("../../packages/config/eslint")],
   settings: {
     next: {
       rootDir: [__dirname]

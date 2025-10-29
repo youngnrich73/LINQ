@@ -1,5 +1,5 @@
 module.exports = {
-  extends: ["@linq/config/eslint"],
+  extends: [require.resolve("../config/eslint")],
   ignorePatterns: ["dist"],
   settings: {
     next: {
