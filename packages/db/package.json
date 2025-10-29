@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
     "lint": "eslint . --ext ts",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@prisma/client": "^5.9.1"

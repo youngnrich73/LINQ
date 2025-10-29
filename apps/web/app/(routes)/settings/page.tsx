@@ -1,14 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
+import { SettingsPanel } from "./settings-panel";
 
 export default function SettingsPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Settings</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Configure privacy, notifications, and product preferences.</p>
-      </CardContent>
-    </Card>
+    <div className="p-6">
+      <SettingsPanel />
+    </div>
   );
 }
