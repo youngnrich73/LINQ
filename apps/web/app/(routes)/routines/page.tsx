@@ -1,14 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
+import { RoutineManager } from "./routine-manager";
 
 export default function RoutinesPage() {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Routines</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>Plan and track recurring relationship rituals here.</p>
-      </CardContent>
-    </Card>
+    <div className="p-6">
+      <RoutineManager />
+    </div>
   );
 }

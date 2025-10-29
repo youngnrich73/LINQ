@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@linq/insights": "0.0.1",
     "@linq/ui": "0.0.1",
     "next": "14.1.0",
     "react": "18.2.0",
