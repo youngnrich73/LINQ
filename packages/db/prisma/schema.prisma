@@ -8,41 +8,45 @@ datasource db {
 }
 
 model Person {
-  id              String           @id @default(cuid())
-  name            String
-  tags            String[]
-  importance      Int
-  contact         Json
-  interactions    Interaction[]
-  routines        Routine[]
-  scoreSnapshots  ScoreSnapshot[]
-  suggestions     Suggestion[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id             String          @id @default(cuid())
+  name           String
+  tags           String[]
+  importance     Int
+  contact        Json
+  interactions   Interaction[]
+  routines       Routine[]
+  scoreSnapshots ScoreSnapshot[]
+  suggestions    Suggestion[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model Interaction {
-  id         String   @id @default(cuid())
-  personId   String
-  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  type       String
-  datetime   DateTime
-  duration   Int
-  sentiment  String?
-  topics     String[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Routine {
   id        String   @id @default(cuid())
   personId  String
   person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  type      String
+  datetime  DateTime
+  duration  Int
+  sentiment String?
+  topics    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([personId, datetime], map: "idx_interaction_person_datetime")
+}
+
+model Routine {
+  id        String    @id @default(cuid())
+  personId  String
+  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
   cadence   String
   lastRun   DateTime?
   nextRun   DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([personId], map: "idx_routine_person")
 }
 
 model ScoreSnapshot {
@@ -58,6 +62,8 @@ model ScoreSnapshot {
   label      String
   computedAt DateTime
   createdAt  DateTime @default(now())
+
+  @@index([personId, computedAt], map: "idx_score_snapshot_person_computed_at")
 }
 
 model Suggestion {
@@ -67,13 +73,15 @@ model Suggestion {
   templateId String
   createdAt  DateTime @default(now())
   outcome    String?
+
+  @@index([personId, createdAt], map: "idx_suggestion_person_created_at")
 }
 
 model Settings {
-  id               String   @id @default(cuid())
-  privacyFlags     Json
-  quietHours       Json?
-  maxNudgesPerDay  Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  privacyFlags    Json
+  quietHours      Json?
+  maxNudgesPerDay Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
     "lint": "eslint . --ext ts",
     "test": "vitest run"
   },
