@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Person {
+  id              String           @id @default(cuid())
+  name            String
+  tags            String[]
+  importance      Int
+  contact         Json
+  interactions    Interaction[]
+  routines        Routine[]
+  scoreSnapshots  ScoreSnapshot[]
+  suggestions     Suggestion[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Interaction {
+  id         String   @id @default(cuid())
+  personId   String
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  type       String
+  datetime   DateTime
+  duration   Int
+  sentiment  String?
+  topics     String[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Routine {
+  id        String   @id @default(cuid())
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  cadence   String
+  lastRun   DateTime?
+  nextRun   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ScoreSnapshot {
+  id         String   @id @default(cuid())
+  personId   String
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  r          Float
+  f          Float
+  rr         Float
+  v          Float
+  td         Float
+  total      Float
+  label      String
+  computedAt DateTime
+  createdAt  DateTime @default(now())
+}
+
+model Suggestion {
+  id         String   @id @default(cuid())
+  personId   String
+  person     Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  templateId String
+  createdAt  DateTime @default(now())
+  outcome    String?
+}
+
+model Settings {
+  id               String   @id @default(cuid())
+  privacyFlags     Json
+  quietHours       Json?
+  maxNudgesPerDay  Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
