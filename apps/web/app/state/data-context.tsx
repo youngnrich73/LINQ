@@ -17,7 +17,7 @@ import {
   isBefore,
   isWithinInterval,
   subDays,
-} from "date-fns";
+} from "../lib/date";
 import { usePathname, useRouter } from "next/navigation";
 import {
   clearAllData,
@@ -103,11 +103,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [loading, pathname, router, settings.onboardingDone]);
 
-  useEffect(() => {
-    if (!loading) {
-      recomputeMetrics();
-    }
-  }, [loading, recomputeMetrics]);
+  const recomputeMetrics = useCallback(() => {
+    setMetrics(() => {
+      const nextMetrics = people.map((person) =>
+        calculateMetrics(person, touches.filter((touch) => touch.personId === person.id))
+      );
+      return nextMetrics;
+    });
+  }, [people, touches]);
 
   useEffect(() => {
     if (metrics.length === 0) {
@@ -184,14 +187,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     timersRef.current = timers;
   }, [people, touches, settings.notificationsEnabled]);
 
-  const recomputeMetrics = useCallback(() => {
-    setMetrics((current) => {
-      const nextMetrics = people.map((person) =>
-        calculateMetrics(person, touches.filter((touch) => touch.personId === person.id))
-      );
-      return nextMetrics;
-    });
-  }, [people, touches]);
+  useEffect(() => {
+    if (!loading) {
+      recomputeMetrics();
+    }
+  }, [loading, recomputeMetrics]);
 
   const addPerson = useCallback<DataContextValue["addPerson"]>(
     async ({ name, group, targetPerWeek }) => {
@@ -502,7 +502,11 @@ function computeSuggestions(metrics: RelationshipMetrics[], people: Person[]): S
     .sort((a, b) => b.intensity - a.intensity)
     .slice(0, MAX_SUGGESTIONS);
 
-  return enriched.map(({ intensity: _intensity, ...rest }) => rest);
+  return enriched.map((item) => {
+    const { intensity, ...rest } = item;
+    void intensity;
+    return rest;
+  });
 }
 
 function chooseTemplate(metric: RelationshipMetrics, person: Person) {

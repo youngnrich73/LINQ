@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { format } from "date-fns";
+import { formatDisplay } from "../../lib/date";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { useData } from "../../state/data-context";
 import type { RoutineRule } from "../../state/types";
@@ -134,7 +134,7 @@ export default function RoutinesPage() {
                   ) : (
                     touches.map((touch) => (
                       <li key={touch.id} className="flex items-center justify-between rounded-md border border-border/50 bg-background/40 px-3 py-2">
-                        <span>{format(new Date(touch.date), "PPPP")}</span>
+                        <span>{formatDisplay(new Date(touch.date), "PPPP")}</span>
                         <span className="text-xs uppercase tracking-wide text-muted-foreground">
                           {touch.acknowledged ? "Ready" : "Pending"}
                         </span>

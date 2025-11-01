@@ -2,6 +2,7 @@
   "name": "@linq/config",
   "version": "0.0.1",
   "private": true,
+  "main": "./eslint/index.js",
   "exports": {
     "./eslint": "./eslint/index.js",
     "./tsconfig/base.json": "./tsconfig/base.json",

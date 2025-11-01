@@ -1,6 +1,6 @@
 "use client";
 
-import { format } from "date-fns";
+import { formatDisplay } from "../../lib/date";
 import { Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { RelationshipRadar } from "../../components/relationship-radar";
 import { TopSuggestions } from "../../components/top-suggestions";
@@ -64,7 +64,7 @@ export default function OverviewPage() {
             <p className="text-sm text-muted-foreground">Runs when idle or when you return to the tab.</p>
           </CardHeader>
           <CardContent>
-            <p className="text-lg">{format(new Date(), "PPpp")}</p>
+            <p className="text-lg">{formatDisplay(new Date(), "PPpp")}</p>
           </CardContent>
         </Card>
       </section>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, formatDisplay } from "../../../lib/date";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { useData } from "../../../state/data-context";
 
@@ -86,7 +86,9 @@ export default function PersonDetailPage() {
                   <li key={interaction.id} className="rounded-md border border-border/60 bg-card/50 p-3">
                     <p className="text-sm font-medium">{interaction.type}</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(interaction.date), "PPpp")} • {formatDistanceToNow(new Date(interaction.date), { addSuffix: true })}
+                      {formatDisplay(new Date(interaction.date), "PPpp")} •
+                      {" "}
+                      {formatDistanceToNow(new Date(interaction.date), { addSuffix: true })}
                     </p>
                     {interaction.note ? <p className="mt-2 text-sm">{interaction.note}</p> : null}
                   </li>

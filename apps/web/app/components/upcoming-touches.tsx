@@ -1,7 +1,7 @@
 "use client";
 
-import { format } from "date-fns";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
+import { formatDisplay } from "../lib/date";
 import { useData } from "../state/data-context";
 
 export function UpcomingTouches() {
@@ -28,7 +28,7 @@ export function UpcomingTouches() {
                 <li key={touch.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card/40 px-3 py-2 text-sm">
                   <div>
                     <p className="font-medium">{person ? person.name : "General"}</p>
-                    <p className="text-xs text-muted-foreground">{format(new Date(touch.date), "PPPP")}</p>
+                    <p className="text-xs text-muted-foreground">{formatDisplay(new Date(touch.date), "PPPP")}</p>
                   </div>
                   <Button
                     size="sm"

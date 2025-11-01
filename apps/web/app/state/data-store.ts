@@ -1,5 +1,3 @@
-import { openDB } from "idb";
-import type { DBSchema, IDBPDatabase } from "idb";
 import type {
   Interaction,
   Person,
@@ -8,59 +6,147 @@ import type {
   Settings,
 } from "./types";
 
-interface LinqDbSchema extends DBSchema {
-  people: {
-    key: string;
-    value: Person;
-  };
-  settings: {
-    key: string;
-    value: Settings & { id: string };
-  };
-  routines: {
-    key: string;
-    value: Routine;
-  };
-  touches: {
-    key: string;
-    value: ScheduledTouch;
-  };
-  interactions: {
-    key: string;
-    value: Interaction;
-    indexes: { "by-person": string };
+type SettingsRecord = Settings & { id: string };
+
+type StoreMap = {
+  people: Person[];
+  settings: SettingsRecord[];
+  routines: Routine[];
+  touches: ScheduledTouch[];
+  interactions: Interaction[];
+};
+
+type StoreName = keyof StoreMap;
+type StoreItem<K extends StoreName> = StoreMap[K] extends Array<infer Item> ? Item : never;
+
+interface IdentifiedRecord {
+  id: string;
+}
+
+const STORAGE_KEY = "linq-os";
+
+let memorySnapshot: StoreMap | null = null;
+
+function createDefaultSnapshot(): StoreMap {
+  return {
+    people: [],
+    settings: [{ id: "singleton", onboardingDone: false }],
+    routines: [],
+    touches: [],
+    interactions: [],
   };
 }
 
-const DB_NAME = "linq-os";
-const DB_VERSION = 1;
+function clone<T>(value: T): T {
+  if (value === undefined || value === null) {
+    return value as T;
+  }
 
-export async function getDatabase() {
-  return openDB<LinqDbSchema>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains("people")) {
-        db.createObjectStore("people", { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains("settings")) {
-        const settingsStore = db.createObjectStore("settings", { keyPath: "id" });
-        settingsStore.put({ id: "singleton", onboardingDone: false });
-      }
-      if (!db.objectStoreNames.contains("routines")) {
-        db.createObjectStore("routines", { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains("touches")) {
-        const touchesStore = db.createObjectStore("touches", { keyPath: "id" });
-        touchesStore.createIndex("byRoutine", "routineId", { unique: false });
-      }
-      if (!db.objectStoreNames.contains("interactions")) {
-        const interactionsStore = db.createObjectStore("interactions", { keyPath: "id" });
-        interactionsStore.createIndex("by-person", "personId", { unique: false });
-      }
-    },
-  });
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export async function loadAll(db: IDBPDatabase<LinqDbSchema>) {
+function readSnapshot(): StoreMap {
+  if (typeof window === "undefined") {
+    if (!memorySnapshot) {
+      memorySnapshot = createDefaultSnapshot();
+    }
+    return clone(memorySnapshot);
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      const snapshot = createDefaultSnapshot();
+      memorySnapshot = clone(snapshot);
+      return snapshot;
+    }
+    const parsed = JSON.parse(raw) as StoreMap;
+    if (!parsed.settings || parsed.settings.length === 0) {
+      parsed.settings = [{ id: "singleton", onboardingDone: false }];
+    }
+    memorySnapshot = clone(parsed);
+    return parsed;
+  } catch {
+    const snapshot = createDefaultSnapshot();
+    memorySnapshot = clone(snapshot);
+    return snapshot;
+  }
+}
+
+function writeSnapshot(snapshot: StoreMap) {
+  memorySnapshot = clone(snapshot);
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memorySnapshot));
+    } catch {
+      // Ignore storage write errors (e.g., private browsing)
+    }
+  }
+}
+
+class LocalDatabase {
+  private snapshot: StoreMap;
+
+  constructor(initialSnapshot: StoreMap) {
+    this.snapshot = clone(initialSnapshot);
+  }
+
+  private persist() {
+    writeSnapshot(this.snapshot);
+  }
+
+  async getAll<K extends StoreName>(store: K): Promise<StoreMap[K]> {
+    return clone(this.snapshot[store]);
+  }
+
+  async put<K extends StoreName>(store: K, value: StoreItem<K>): Promise<void> {
+    const list = [...(this.snapshot[store] as StoreItem<K>[])];
+    const record = value as StoreItem<K> & IdentifiedRecord;
+    const id = record.id;
+    if (!id) {
+      throw new Error(`Cannot put into ${store.toString()} without an id field`);
+    }
+    const clonedValue = clone(record) as StoreItem<K>;
+    const index = list.findIndex((item) => (item as IdentifiedRecord).id === id);
+    if (index >= 0) {
+      list[index] = clonedValue;
+    } else {
+      list.push(clonedValue);
+    }
+    this.snapshot[store] = list as StoreMap[K];
+    this.persist();
+  }
+
+  async delete<K extends StoreName>(store: K, key: string): Promise<void> {
+    const list = (this.snapshot[store] as StoreItem<K>[]).filter(
+      (item) => (item as IdentifiedRecord).id !== key
+    );
+    this.snapshot[store] = clone(list) as StoreMap[K];
+    this.persist();
+  }
+
+  async clear<K extends StoreName>(store: K): Promise<void> {
+    this.snapshot[store] = [] as StoreMap[K];
+    this.persist();
+  }
+
+  async replace<K extends StoreName>(store: K, values: StoreMap[K]): Promise<void> {
+    this.snapshot[store] = clone(values);
+    this.persist();
+  }
+}
+
+let dbPromise: Promise<LocalDatabase> | null = null;
+
+export async function getDatabase(): Promise<LocalDatabase> {
+  if (!dbPromise) {
+    const snapshot = readSnapshot();
+    dbPromise = Promise.resolve(new LocalDatabase(snapshot));
+  }
+  return dbPromise;
+}
+
+export async function loadAll(db: LocalDatabase) {
   const [people, routines, touches, settingsRecords, interactions] = await Promise.all([
     db.getAll("people"),
     db.getAll("routines"),
@@ -69,10 +155,15 @@ export async function loadAll(db: IDBPDatabase<LinqDbSchema>) {
     db.getAll("interactions"),
   ]);
 
-  const settings = settingsRecords.find((item) => item.id === "singleton") ?? {
-    id: "singleton",
-    onboardingDone: false,
-  };
+  const settings =
+    settingsRecords.find((item) => item.id === "singleton") ?? ({
+      id: "singleton",
+      onboardingDone: false,
+    } as SettingsRecord);
+
+  if (!settingsRecords.find((item) => item.id === "singleton")) {
+    await db.put("settings", settings);
+  }
 
   const interactionsByPerson = interactions.reduce<Record<string, Interaction[]>>(
     (acc, interaction) => {
@@ -91,79 +182,61 @@ export async function loadAll(db: IDBPDatabase<LinqDbSchema>) {
   return { people: enhancedPeople, routines, touches, settings };
 }
 
-export async function persistPerson(db: IDBPDatabase<LinqDbSchema>, person: Person) {
+export async function persistPerson(db: LocalDatabase, person: Person) {
   await db.put("people", person);
 }
 
-export async function removePerson(db: IDBPDatabase<LinqDbSchema>, id: string) {
-  await Promise.all([
-    db.delete("people", id),
-    clearPersonInteractions(db, id),
-  ]);
+export async function removePerson(db: LocalDatabase, id: string) {
+  await db.delete("people", id);
+  await clearPersonInteractions(db, id);
 }
 
-export async function persistSettings(
-  db: IDBPDatabase<LinqDbSchema>,
-  settings: Settings
-) {
+export async function persistSettings(db: LocalDatabase, settings: Settings) {
   await db.put("settings", { ...settings, id: "singleton" });
 }
 
-export async function persistRoutine(db: IDBPDatabase<LinqDbSchema>, routine: Routine) {
+export async function persistRoutine(db: LocalDatabase, routine: Routine) {
   await db.put("routines", routine);
 }
 
-export async function removeRoutine(db: IDBPDatabase<LinqDbSchema>, id: string) {
-  await Promise.all([
-    db.delete("routines", id),
-    deleteRoutineTouches(db, id),
-  ]);
+export async function removeRoutine(db: LocalDatabase, id: string) {
+  await db.delete("routines", id);
+  await deleteRoutineTouches(db, id);
 }
 
-export async function persistTouch(db: IDBPDatabase<LinqDbSchema>, touch: ScheduledTouch) {
+export async function persistTouch(db: LocalDatabase, touch: ScheduledTouch) {
   await db.put("touches", touch);
 }
 
-export async function persistTouches(
-  db: IDBPDatabase<LinqDbSchema>,
-  touches: ScheduledTouch[]
-) {
-  const tx = db.transaction("touches", "readwrite");
-  await Promise.all(touches.map((touch) => tx.store.put(touch)));
-  await tx.done;
-}
-
-export async function deleteRoutineTouches(db: IDBPDatabase<LinqDbSchema>, routineId: string) {
-  const index = db.transaction("touches", "readwrite").store.index("byRoutine");
-  let cursor = await index.openCursor(routineId);
-  while (cursor) {
-    await cursor.delete();
-    cursor = await cursor.continue();
+export async function persistTouches(db: LocalDatabase, touches: ScheduledTouch[]) {
+  const existing = await db.getAll("touches");
+  const merged = new Map(existing.map((touch) => [touch.id, touch]));
+  for (const touch of touches) {
+    merged.set(touch.id, touch);
   }
+  await db.replace("touches", Array.from(merged.values()));
 }
 
-export async function persistInteraction(
-  db: IDBPDatabase<LinqDbSchema>,
-  interaction: Interaction
-) {
+export async function deleteRoutineTouches(db: LocalDatabase, routineId: string) {
+  const remaining = (await db.getAll("touches")).filter((touch) => touch.routineId !== routineId);
+  await db.replace("touches", remaining);
+}
+
+export async function persistInteraction(db: LocalDatabase, interaction: Interaction) {
   await db.put("interactions", interaction);
 }
 
-export async function clearPersonInteractions(db: IDBPDatabase<LinqDbSchema>, personId: string) {
-  const index = db.transaction("interactions", "readwrite").store.index("by-person");
-  let cursor = await index.openCursor(personId);
-  while (cursor) {
-    await cursor.delete();
-    cursor = await cursor.continue();
-  }
+export async function clearPersonInteractions(db: LocalDatabase, personId: string) {
+  const remaining = (await db.getAll("interactions")).filter((interaction) => interaction.personId !== personId);
+  await db.replace("interactions", remaining);
 }
 
-export async function clearAllData(db: IDBPDatabase<LinqDbSchema>) {
+export async function clearAllData(db: LocalDatabase) {
   await Promise.all([
-    db.clear("people"),
-    db.clear("routines"),
-    db.clear("touches"),
-    db.clear("interactions"),
-    db.put("settings", { id: "singleton", onboardingDone: false }),
+    db.replace("people", []),
+    db.replace("routines", []),
+    db.replace("touches", []),
+    db.replace("interactions", []),
   ]);
+  await db.put("settings", { id: "singleton", onboardingDone: false });
 }
