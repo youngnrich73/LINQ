@@ -18,7 +18,6 @@ import {
   isWithinInterval,
   subDays,
 } from "../lib/date";
-import { usePathname, useRouter } from "next/navigation";
 import {
   clearAllData,
   getDatabase,
@@ -73,8 +72,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [metrics, setMetrics] = useState<RelationshipMetrics[]>([]);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const dbRef = useRef<Awaited<ReturnType<typeof getDatabase>>>();
-  const router = useRouter();
-  const pathname = usePathname();
   const timersRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -92,16 +89,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
     void init();
   }, []);
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-    const shouldRedirect = !settings.onboardingDone && pathname !== "/onboarding";
-    if (shouldRedirect) {
-      router.replace("/onboarding");
-    }
-  }, [loading, pathname, router, settings.onboardingDone]);
 
   const recomputeMetrics = useCallback(() => {
     setMetrics(() => {
@@ -267,8 +254,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     };
     setSettings(nextSettings);
     await persistSettings(db, nextSettings);
-    router.replace("/overview");
-  }, [router, settings]);
+  }, [settings]);
 
   const deleteAll = useCallback(async () => {
     const db = dbRef.current;
@@ -280,8 +266,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setSettings({ onboardingDone: false, lastClearedAt: new Date().toISOString() });
     setMetrics([]);
     setSuggestions([]);
-    router.replace("/onboarding");
-  }, [router]);
+  }, []);
 
   const addRoutine = useCallback<DataContextValue["addRoutine"]>(
     async ({ personId, rule, note }) => {

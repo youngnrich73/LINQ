@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { useData } from "../../state/data-context";
 import type { PersonGroup } from "../../state/types";
@@ -10,10 +11,12 @@ const TARGETS = [0.5, 1, 1.5, 2];
 
 export default function OnboardingPage() {
   const { addPerson, people, markOnboardingDone, loading } = useData();
+  const router = useRouter();
   const [name, setName] = useState("");
   const [group, setGroup] = useState<PersonGroup>("Inner");
   const [target, setTarget] = useState<number>(1);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleAdd = async () => {
     if (!name.trim()) {
@@ -30,6 +33,17 @@ export default function OnboardingPage() {
   };
 
   const canComplete = people.length >= 12;
+
+  const handleComplete = async () => {
+    if (!canComplete || submitting) return;
+    setSubmitting(true);
+    try {
+      await markOnboardingDone();
+      router.replace("/overview");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl space-y-6">
@@ -126,7 +140,7 @@ export default function OnboardingPage() {
 
       <div className="flex items-center justify-end gap-4">
         <p className="text-sm text-muted-foreground">Complete onboarding to unlock the overview and radar.</p>
-        <Button onClick={() => void markOnboardingDone()} disabled={!canComplete}>
+        <Button onClick={() => void handleComplete()} disabled={!canComplete || submitting}>
           Start tracking
         </Button>
       </div>

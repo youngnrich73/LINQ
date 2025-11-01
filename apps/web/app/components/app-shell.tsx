@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { useData } from "../state/data-context";
@@ -11,8 +11,17 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { settings } = useData();
+  const { settings, loading } = useData();
   const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!settings.onboardingDone && pathname !== "/onboarding") {
+      router.replace("/onboarding");
+    }
+  }, [loading, pathname, router, settings.onboardingDone]);
+
   const onboardingView = pathname === "/onboarding" || !settings.onboardingDone;
 
   if (onboardingView) {

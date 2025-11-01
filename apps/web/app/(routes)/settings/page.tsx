@@ -1,19 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { useData } from "../../state/data-context";
 
 export default function SettingsPage() {
   const { deleteAll, settings } = useData();
+  const router = useRouter();
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await deleteAll();
-    setIsDeleting(false);
+    try {
+      await deleteAll();
+      setConfirmChecked(false);
+      setConfirmText("");
+      router.replace("/onboarding");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
