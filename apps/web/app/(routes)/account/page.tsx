@@ -1,12 +1,11 @@
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { authOptions } from "../../lib/auth";
+import { getSessionFromCookies } from "../../lib/server-session";
 import { AccountDashboard } from "./account-dashboard";
 
-export default async function AccountPage() {
-  const session = await getServerSession(authOptions);
+export default function AccountPage() {
+  const session = getSessionFromCookies();
   if (!session) {
-    redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent("/account")}`);
+    redirect(`/api/auth/login?callbackUrl=${encodeURIComponent("/account")}`);
   }
   return <AccountDashboard session={session} />;
 }

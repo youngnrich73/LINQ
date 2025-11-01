@@ -2,13 +2,13 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@linq/ui";
 import { useToast } from "./toast-provider";
+import { useAuth } from "../state/auth-context";
 
 export function Header() {
-  const { data: session, status } = useSession();
+  const { session, status, login, logout } = useAuth();
   const { push } = useToast();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -49,9 +49,9 @@ export function Header() {
     };
   }, [menuOpen]);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     try {
-      await signIn("google", { callbackUrl: "/overview" });
+      login("/overview");
     } catch (error) {
       push({
         title: "Sign-in unavailable",
@@ -63,7 +63,7 @@ export function Header() {
 
   const handleLogout = async () => {
     setMenuOpen(false);
-    await signOut({ callbackUrl: "/overview" });
+    await logout("/overview");
   };
 
   return (
@@ -131,7 +131,7 @@ export function Header() {
           type="button"
           variant="secondary"
           className="h-11 min-h-[44px] min-w-[44px] px-4"
-          onClick={() => void handleLogin()}
+          onClick={handleLogin}
         >
           Log in
         </Button>

@@ -2,15 +2,15 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useToast } from "./toast-provider";
+import { useAuth } from "../state/auth-context";
 
 export function AuthFeedbackWatcher() {
   const params = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
   const { push } = useToast();
-  const { status } = useSession();
+  const { status } = useAuth();
   const previousStatus = useRef(status);
 
   useEffect(() => {
@@ -48,15 +48,16 @@ export function AuthFeedbackWatcher() {
 
 function getErrorMessage(code: string) {
   switch (code) {
-    case "OAuthSignin":
-    case "OAuthCallback":
+    case "config_error":
+      return "Sign-in is unavailable because Google credentials are not configured.";
+    case "token_exchange_failed":
+    case "profile_fetch_failed":
+    case "auth_failed":
       return "We couldn’t complete the Google sign-in flow. Please try again.";
-    case "OAuthAccountNotLinked":
-      return "The Google account is already linked to another login method.";
-    case "AccessDenied":
+    case "access_denied":
       return "Permission was denied during sign-in.";
-    case "Configuration":
-      return "The sign-in configuration is incomplete. Check the OAuth credentials.";
+    case "state_mismatch":
+      return "The sign-in attempt was invalid. Please try again.";
     default:
       return "Sign-in was cancelled. Please try again.";
   }

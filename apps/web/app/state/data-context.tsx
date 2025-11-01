@@ -307,13 +307,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   >(async (updater) => {
     const db = dbRef.current;
     if (!db) return;
-    let nextSettings: Settings;
+    let resolvedSettings: Settings | null = null;
     setSettings((previous) => {
-      nextSettings =
+      const nextValue =
         typeof updater === "function" ? updater(previous) : { ...previous, ...updater };
-      return nextSettings;
+      resolvedSettings = nextValue;
+      return nextValue;
     });
-    await persistSettings(db, nextSettings);
+    if (resolvedSettings) {
+      await persistSettings(db, resolvedSettings);
+    }
   }, []);
 
   const peopleCount = people.length;
@@ -395,7 +398,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const toggleNotifications = useCallback(async (enabled: boolean) => {
     const db = dbRef.current;
-    if (!db) return;
+    if (!db) return false;
     if (peopleCount === 0) {
       return false;
     }

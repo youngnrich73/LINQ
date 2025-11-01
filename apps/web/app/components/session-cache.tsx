@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { useSession } from "next-auth/react";
+import { useAuth } from "../state/auth-context";
 
 const CACHE_KEY = "linq:user-meta";
 
 export function SessionCache({ children }: { children: ReactNode }) {
-  const { data } = useSession();
+  const { session } = useAuth();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      if (data?.user) {
-        const { id, email, name, image } = data.user;
+      if (session?.user) {
+        const { id, email, name, image } = session.user;
         const payload = JSON.stringify({ id, email, name, avatar: image });
         window.localStorage.setItem(CACHE_KEY, payload);
       } else {
@@ -21,7 +21,7 @@ export function SessionCache({ children }: { children: ReactNode }) {
     } catch {
       // Ignore storage limitations.
     }
-  }, [data]);
+  }, [session]);
 
   return <>{children}</>;
 }

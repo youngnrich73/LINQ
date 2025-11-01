@@ -2,11 +2,11 @@
 
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Session } from "next-auth";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { useToast } from "../../components/toast-provider";
 import { useData } from "../../state/data-context";
 import type { RoutinePreset, SuggestionExecution } from "../../state/types";
+import type { AuthSession } from "../../lib/auth-types";
 
 const routinePresetOptions: { value: RoutinePreset; label: string; description: string }[] = [
   { value: "monthly-call", label: "Monthly call", description: "Call twice each month." },
@@ -14,7 +14,7 @@ const routinePresetOptions: { value: RoutinePreset; label: string; description: 
   { value: "quarterly-check-in", label: "Quarterly check-in", description: "Share a thoughtful note once a quarter." },
 ];
 
-export function AccountDashboard({ session }: { session: Session }) {
+export function AccountDashboard({ session }: { session: AuthSession }) {
   const { deleteAll, toggleNotifications, settings, updateSettings, people } = useData();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmText, setConfirmText] = useState("");
