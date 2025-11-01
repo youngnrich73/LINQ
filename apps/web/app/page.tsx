@@ -1,14 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Overview</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>The relationship OS dashboard will live here.</p>
-      </CardContent>
-    </Card>
-  );
+  redirect("/overview");
 }
