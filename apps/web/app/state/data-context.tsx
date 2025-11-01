@@ -54,8 +54,9 @@ interface DataContextValue {
   markOnboardingDone(): Promise<void>;
   deleteAll(): Promise<void>;
   addRoutine(input: { personId?: string; rule: Routine["rule"]; note?: string }): Promise<void>;
-  toggleNotifications(enabled: boolean): Promise<void>;
+  toggleNotifications(enabled: boolean): Promise<boolean>;
   acknowledgeTouch(id: string): Promise<void>;
+  updateSettings(updater: Partial<Settings> | ((previous: Settings) => Settings)): Promise<void>;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -66,7 +67,16 @@ const MAX_SUGGESTIONS = 5;
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [people, setPeople] = useState<Person[]>([]);
-  const [settings, setSettings] = useState<Settings>({ onboardingDone: true });
+  const [settings, setSettings] = useState<Settings>({
+    onboardingDone: true,
+    notificationsEnabled: false,
+    notificationTime: "09:00",
+    quietWeek: false,
+    calendarStatus: "disconnected",
+    favoriteGoalPerWeek: 3,
+    defaultRoutinePreset: "monthly-call",
+    recentExecutions: [],
+  });
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [touches, setTouches] = useState<ScheduledTouch[]>([]);
   const [metrics, setMetrics] = useState<RelationshipMetrics[]>([]);
@@ -83,7 +93,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setPeople(storedPeople);
       setRoutines(storedRoutines);
       setTouches(storedTouches);
-      setSettings({ ...storedSettings, onboardingDone: true });
+      setSettings({
+        onboardingDone: true,
+        notificationsEnabled: storedSettings.notificationsEnabled ?? false,
+        notificationTime: storedSettings.notificationTime ?? "09:00",
+        quietWeek: storedSettings.quietWeek ?? false,
+        encryptionSummary: storedSettings.encryptionSummary,
+        lastClearedAt: storedSettings.lastClearedAt,
+        calendarStatus: storedSettings.calendarStatus ?? "disconnected",
+        favoriteGoalPerWeek: storedSettings.favoriteGoalPerWeek ?? 3,
+        defaultRoutinePreset: storedSettings.defaultRoutinePreset ?? "monthly-call",
+        recentExecutions: storedSettings.recentExecutions ?? [],
+      });
       setLoading(false);
     }
 
@@ -263,9 +284,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setPeople([]);
     setRoutines([]);
     setTouches([]);
-    setSettings({ onboardingDone: true, lastClearedAt: new Date().toISOString() });
+    const resetSettings: Settings = {
+      onboardingDone: true,
+      notificationsEnabled: false,
+      notificationTime: "09:00",
+      quietWeek: false,
+      encryptionSummary: settings.encryptionSummary,
+      lastClearedAt: new Date().toISOString(),
+      calendarStatus: "disconnected",
+      favoriteGoalPerWeek: 3,
+      defaultRoutinePreset: "monthly-call",
+      recentExecutions: [],
+    };
+    setSettings(resetSettings);
+    await persistSettings(db, resetSettings);
     setMetrics([]);
     setSuggestions([]);
+  }, [settings.encryptionSummary]);
+
+  const updateSettings = useCallback<
+    DataContextValue["updateSettings"]
+  >(async (updater) => {
+    const db = dbRef.current;
+    if (!db) return;
+    let nextSettings: Settings;
+    setSettings((previous) => {
+      nextSettings =
+        typeof updater === "function" ? updater(previous) : { ...previous, ...updater };
+      return nextSettings;
+    });
+    await persistSettings(db, nextSettings);
   }, []);
 
   const peopleCount = people.length;
@@ -308,24 +356,48 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const acknowledgeTouch = useCallback(async (id: string) => {
     const db = dbRef.current;
     if (!db) return;
+    let acknowledgedTouch: ScheduledTouch | undefined;
     setTouches((prev) => {
       const next = prev.map((touch) =>
-        touch.id === id ? { ...touch, acknowledged: true } : touch
+        touch.id === id
+          ? (() => {
+              const updated = { ...touch, acknowledged: true };
+              acknowledgedTouch = updated;
+              void persistTouch(db, updated);
+              return updated;
+            })()
+          : touch
       );
-      next
-        .filter((touch) => touch.id === id)
-        .forEach((touch) => {
-          void persistTouch(db, touch);
-        });
       return next;
     });
-  }, []);
+    if (acknowledgedTouch) {
+      const person = people.find((item) => item.id === acknowledgedTouch?.personId);
+      const actionSummary = acknowledgedTouch.note
+        ? acknowledgedTouch.note
+        : person
+          ? `Reached out to ${person.name}`
+          : "Marked a routine touch complete";
+      await updateSettings((prev) => {
+        const history = [
+          {
+            id: crypto.randomUUID(),
+            personId: acknowledgedTouch?.personId,
+            personName: person?.name,
+            action: actionSummary,
+            executedAt: new Date().toISOString(),
+          },
+          ...(prev.recentExecutions ?? []),
+        ].slice(0, 10);
+        return { ...prev, recentExecutions: history };
+      });
+    }
+  }, [people, updateSettings]);
 
   const toggleNotifications = useCallback(async (enabled: boolean) => {
     const db = dbRef.current;
     if (!db) return;
     if (peopleCount === 0) {
-      return;
+      return false;
     }
     let nextEnabled = enabled;
     if (nextEnabled && typeof window !== "undefined" && typeof Notification !== "undefined") {
@@ -336,10 +408,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } else if (nextEnabled) {
       nextEnabled = false;
     }
-    const nextSettings = { ...settings, notificationsEnabled: nextEnabled };
-    setSettings(nextSettings);
-    await persistSettings(db, nextSettings);
-  }, [peopleCount, settings]);
+    await updateSettings((prev) => ({ ...prev, notificationsEnabled: nextEnabled }));
+    return nextEnabled;
+  }, [peopleCount, updateSettings]);
 
   const value = useMemo<DataContextValue>(
     () => ({
@@ -358,6 +429,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       addRoutine,
       toggleNotifications,
       acknowledgeTouch,
+      updateSettings,
     }),
     [
       acknowledgeTouch,
@@ -375,6 +447,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       touches,
       updatePerson,
       markOnboardingDone,
+      updateSettings,
     ]
   );
 

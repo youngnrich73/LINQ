@@ -27,11 +27,29 @@ export interface Person {
   topics?: string[];
 }
 
+export type CalendarConnectionState = "connected" | "disconnected" | "error";
+
+export type RoutinePreset = "monthly-call" | "biweekly-message" | "quarterly-check-in";
+
+export interface SuggestionExecution {
+  id: string;
+  personId?: string;
+  personName?: string;
+  action: string;
+  executedAt: string;
+}
+
 export interface Settings {
   onboardingDone: boolean;
   notificationsEnabled?: boolean;
+  notificationTime?: string;
+  quietWeek?: boolean;
   encryptionSummary?: string;
   lastClearedAt?: string;
+  calendarStatus?: CalendarConnectionState;
+  favoriteGoalPerWeek?: number;
+  defaultRoutinePreset?: RoutinePreset;
+  recentExecutions?: SuggestionExecution[];
 }
 
 export type RoutineRule =
