@@ -15,6 +15,7 @@ export default function RoutinesPage() {
 
   const personOptions = useMemo(() => [{ id: "all", name: "Any" }, ...people], [people]);
   const personName = (id: string | undefined) => people.find((person) => person.id === id)?.name ?? "Any";
+  const hasPeople = people.length > 0;
 
   const relatedTouches = useMemo(() => {
     return routines.map((routine) => ({
@@ -24,6 +25,7 @@ export default function RoutinesPage() {
   }, [routines, touches]);
 
   const handleCreate = async () => {
+    if (!hasPeople) return;
     const rule: RoutineRule = { type: ruleType, count: Math.max(1, count) };
     await addRoutine({ personId: personId === "all" ? undefined : personId, rule, note });
     setNote("");
@@ -44,6 +46,7 @@ export default function RoutinesPage() {
                 value={personId}
                 onChange={(event) => setPersonId(event.target.value)}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+                disabled={!hasPeople}
               >
                 {personOptions.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -58,6 +61,7 @@ export default function RoutinesPage() {
                 value={ruleType}
                 onChange={(event) => setRuleType(event.target.value as RoutineRule["type"])}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+                disabled={!hasPeople}
               >
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -72,6 +76,7 @@ export default function RoutinesPage() {
                 value={count}
                 onChange={(event) => setCount(Number(event.target.value))}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
+                disabled={!hasPeople}
               />
             </label>
             <label className="text-sm">
@@ -81,10 +86,18 @@ export default function RoutinesPage() {
                 onChange={(event) => setNote(event.target.value)}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
                 placeholder="Coffee chat, gratitude note, etc."
+                disabled={!hasPeople}
               />
             </label>
           </div>
-          <Button onClick={() => void handleCreate()}>Generate touches</Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button onClick={() => void handleCreate()} disabled={!hasPeople}>
+              Generate touches
+            </Button>
+            {!hasPeople ? (
+              <p className="text-xs text-muted-foreground">Add someone on the People page to enable routines.</p>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 
@@ -97,13 +110,16 @@ export default function RoutinesPage() {
           <Button
             variant={settings.notificationsEnabled ? "secondary" : "outline"}
             onClick={() => void toggleNotifications(!settings.notificationsEnabled)}
+            disabled={!hasPeople}
           >
             {settings.notificationsEnabled ? "Disable" : "Enable"} notifications
           </Button>
           <p className="text-xs text-muted-foreground">
-            {settings.notificationsEnabled
-              ? "We’ll ping you one day before a scheduled touch."
-              : "Notifications stay on-device and can be toggled any time."}
+            {!hasPeople
+              ? "Add at least one person to enable reminders."
+              : settings.notificationsEnabled
+                ? "We’ll ping you one day before a scheduled touch."
+                : "Notifications stay on-device and can be toggled any time."}
           </p>
         </CardContent>
       </Card>

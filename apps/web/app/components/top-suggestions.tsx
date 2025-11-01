@@ -9,11 +9,24 @@ export function TopSuggestions() {
   const { suggestions, logInteraction, people } = useData();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  if (people.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Top suggestions</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Add someone on the People page to unlock recommendations tailored to your relationships.
+          </p>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   if (suggestions.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Top nudges</CardTitle>
+          <CardTitle>Top suggestions</CardTitle>
           <p className="text-sm text-muted-foreground">As you log interactions, suggestions will appear here.</p>
         </CardHeader>
       </Card>
@@ -47,7 +60,7 @@ export function TopSuggestions() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top 5 suggestions</CardTitle>
+        <CardTitle>Top suggestions</CardTitle>
         <p className="text-sm text-muted-foreground">
           Ranked by relationship heat. Toggle explain to see the why behind each recommendation.
         </p>

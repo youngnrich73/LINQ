@@ -66,7 +66,7 @@ const MAX_SUGGESTIONS = 5;
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [people, setPeople] = useState<Person[]>([]);
-  const [settings, setSettings] = useState<Settings>({ onboardingDone: false });
+  const [settings, setSettings] = useState<Settings>({ onboardingDone: true });
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [touches, setTouches] = useState<ScheduledTouch[]>([]);
   const [metrics, setMetrics] = useState<RelationshipMetrics[]>([]);
@@ -83,7 +83,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setPeople(storedPeople);
       setRoutines(storedRoutines);
       setTouches(storedTouches);
-      setSettings(storedSettings);
+      setSettings({ ...storedSettings, onboardingDone: true });
       setLoading(false);
     }
 
@@ -100,7 +100,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [people, touches]);
 
   useEffect(() => {
-    if (metrics.length === 0) {
+    if (metrics.length === 0 || people.length === 0) {
       setSuggestions([]);
       return;
     }
@@ -263,15 +263,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setPeople([]);
     setRoutines([]);
     setTouches([]);
-    setSettings({ onboardingDone: false, lastClearedAt: new Date().toISOString() });
+    setSettings({ onboardingDone: true, lastClearedAt: new Date().toISOString() });
     setMetrics([]);
     setSuggestions([]);
   }, []);
+
+  const peopleCount = people.length;
 
   const addRoutine = useCallback<DataContextValue["addRoutine"]>(
     async ({ personId, rule, note }) => {
       const db = dbRef.current;
       if (!db) return;
+      if (peopleCount === 0) {
+        return;
+      }
       const routine: Routine = {
         id: crypto.randomUUID(),
         personId,
@@ -297,7 +302,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
       }
     },
-    [touches]
+    [peopleCount, touches]
   );
 
   const acknowledgeTouch = useCallback(async (id: string) => {
@@ -319,6 +324,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const toggleNotifications = useCallback(async (enabled: boolean) => {
     const db = dbRef.current;
     if (!db) return;
+    if (peopleCount === 0) {
+      return;
+    }
     let nextEnabled = enabled;
     if (nextEnabled && typeof window !== "undefined" && typeof Notification !== "undefined") {
       const permission = await Notification.requestPermission();
@@ -331,7 +339,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const nextSettings = { ...settings, notificationsEnabled: nextEnabled };
     setSettings(nextSettings);
     await persistSettings(db, nextSettings);
-  }, [settings]);
+  }, [peopleCount, settings]);
 
   const value = useMemo<DataContextValue>(
     () => ({
@@ -467,6 +475,9 @@ function calculateMetrics(person: Person, upcomingTouches: ScheduledTouch[]): Re
 }
 
 function computeSuggestions(metrics: RelationshipMetrics[], people: Person[]): Suggestion[] {
+  if (metrics.length === 0 || people.length === 0) {
+    return [];
+  }
   const enriched = metrics
     .map((metric) => {
       const person = people.find((item) => item.id === metric.personId);
@@ -485,7 +496,7 @@ function computeSuggestions(metrics: RelationshipMetrics[], people: Person[]): S
     })
     .filter((item): item is Suggestion & { intensity: number } => Boolean(item))
     .sort((a, b) => b.intensity - a.intensity)
-    .slice(0, MAX_SUGGESTIONS);
+    .slice(0, Math.min(MAX_SUGGESTIONS, people.length));
 
   return enriched.map((item) => {
     const { intensity, ...rest } = item;

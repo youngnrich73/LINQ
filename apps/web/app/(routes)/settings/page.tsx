@@ -18,7 +18,7 @@ export default function SettingsPage() {
       await deleteAll();
       setConfirmChecked(false);
       setConfirmText("");
-      router.replace("/onboarding");
+      router.replace("/overview");
     } finally {
       setIsDeleting(false);
     }
@@ -77,7 +77,7 @@ export default function SettingsPage() {
       <Card className="border-destructive/40">
         <CardHeader>
           <CardTitle className="text-destructive">Delete all data</CardTitle>
-          <p className="text-sm text-muted-foreground">This removes people, metrics, routines, and settings. The app will restart in onboarding mode.</p>
+          <p className="text-sm text-muted-foreground">This removes people, metrics, routines, and settings. Reload to start fresh.</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="flex items-center gap-2 text-sm">
@@ -104,9 +104,7 @@ export default function SettingsPage() {
           >
             {isDeleting ? "Deleting…" : "Delete everything"}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            After deletion, reload the app to go through onboarding again.
-          </p>
+          <p className="text-xs text-muted-foreground">After deletion, reload the app to add new people.</p>
         </CardContent>
       </Card>
     </div>

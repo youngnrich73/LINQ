@@ -30,7 +30,7 @@ let memorySnapshot: StoreMap | null = null;
 function createDefaultSnapshot(): StoreMap {
   return {
     people: [],
-    settings: [{ id: "singleton", onboardingDone: false }],
+    settings: [{ id: "singleton", onboardingDone: true }],
     routines: [],
     touches: [],
     interactions: [],
@@ -62,7 +62,7 @@ function readSnapshot(): StoreMap {
     }
     const parsed = JSON.parse(raw) as StoreMap;
     if (!parsed.settings || parsed.settings.length === 0) {
-      parsed.settings = [{ id: "singleton", onboardingDone: false }];
+      parsed.settings = [{ id: "singleton", onboardingDone: true }];
     }
     memorySnapshot = clone(parsed);
     return parsed;
@@ -158,7 +158,7 @@ export async function loadAll(db: LocalDatabase) {
   const settings =
     settingsRecords.find((item) => item.id === "singleton") ?? ({
       id: "singleton",
-      onboardingDone: false,
+      onboardingDone: true,
     } as SettingsRecord);
 
   if (!settingsRecords.find((item) => item.id === "singleton")) {
@@ -238,5 +238,5 @@ export async function clearAllData(db: LocalDatabase) {
     db.replace("touches", []),
     db.replace("interactions", []),
   ]);
-  await db.put("settings", { id: "singleton", onboardingDone: false });
+  await db.put("settings", { id: "singleton", onboardingDone: true });
 }
