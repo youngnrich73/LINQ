@@ -54,8 +54,9 @@ interface DataContextValue {
   markOnboardingDone(): Promise<void>;
   deleteAll(): Promise<void>;
   addRoutine(input: { personId?: string; rule: Routine["rule"]; note?: string }): Promise<void>;
-  toggleNotifications(enabled: boolean): Promise<void>;
+  toggleNotifications(enabled: boolean): Promise<boolean>;
   acknowledgeTouch(id: string): Promise<void>;
+  updateSettings(updater: Partial<Settings> | ((previous: Settings) => Settings)): Promise<void>;
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -66,7 +67,16 @@ const MAX_SUGGESTIONS = 5;
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [people, setPeople] = useState<Person[]>([]);
-  const [settings, setSettings] = useState<Settings>({ onboardingDone: false });
+  const [settings, setSettings] = useState<Settings>({
+    onboardingDone: true,
+    notificationsEnabled: false,
+    notificationTime: "09:00",
+    quietWeek: false,
+    calendarStatus: "disconnected",
+    favoriteGoalPerWeek: 3,
+    defaultRoutinePreset: "monthly-call",
+    recentExecutions: [],
+  });
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [touches, setTouches] = useState<ScheduledTouch[]>([]);
   const [metrics, setMetrics] = useState<RelationshipMetrics[]>([]);
@@ -83,7 +93,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setPeople(storedPeople);
       setRoutines(storedRoutines);
       setTouches(storedTouches);
-      setSettings(storedSettings);
+      setSettings({
+        onboardingDone: true,
+        notificationsEnabled: storedSettings.notificationsEnabled ?? false,
+        notificationTime: storedSettings.notificationTime ?? "09:00",
+        quietWeek: storedSettings.quietWeek ?? false,
+        encryptionSummary: storedSettings.encryptionSummary,
+        lastClearedAt: storedSettings.lastClearedAt,
+        calendarStatus: storedSettings.calendarStatus ?? "disconnected",
+        favoriteGoalPerWeek: storedSettings.favoriteGoalPerWeek ?? 3,
+        defaultRoutinePreset: storedSettings.defaultRoutinePreset ?? "monthly-call",
+        recentExecutions: storedSettings.recentExecutions ?? [],
+      });
       setLoading(false);
     }
 
@@ -100,7 +121,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [people, touches]);
 
   useEffect(() => {
-    if (metrics.length === 0) {
+    if (metrics.length === 0 || people.length === 0) {
       setSuggestions([]);
       return;
     }
@@ -263,15 +284,50 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setPeople([]);
     setRoutines([]);
     setTouches([]);
-    setSettings({ onboardingDone: false, lastClearedAt: new Date().toISOString() });
+    const resetSettings: Settings = {
+      onboardingDone: true,
+      notificationsEnabled: false,
+      notificationTime: "09:00",
+      quietWeek: false,
+      encryptionSummary: settings.encryptionSummary,
+      lastClearedAt: new Date().toISOString(),
+      calendarStatus: "disconnected",
+      favoriteGoalPerWeek: 3,
+      defaultRoutinePreset: "monthly-call",
+      recentExecutions: [],
+    };
+    setSettings(resetSettings);
+    await persistSettings(db, resetSettings);
     setMetrics([]);
     setSuggestions([]);
+  }, [settings.encryptionSummary]);
+
+  const updateSettings = useCallback<
+    DataContextValue["updateSettings"]
+  >(async (updater) => {
+    const db = dbRef.current;
+    if (!db) return;
+    let resolvedSettings: Settings | null = null;
+    setSettings((previous) => {
+      const nextValue =
+        typeof updater === "function" ? updater(previous) : { ...previous, ...updater };
+      resolvedSettings = nextValue;
+      return nextValue;
+    });
+    if (resolvedSettings) {
+      await persistSettings(db, resolvedSettings);
+    }
   }, []);
+
+  const peopleCount = people.length;
 
   const addRoutine = useCallback<DataContextValue["addRoutine"]>(
     async ({ personId, rule, note }) => {
       const db = dbRef.current;
       if (!db) return;
+      if (peopleCount === 0) {
+        return;
+      }
       const routine: Routine = {
         id: crypto.randomUUID(),
         personId,
@@ -297,28 +353,55 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         });
       }
     },
-    [touches]
+    [peopleCount, touches]
   );
 
   const acknowledgeTouch = useCallback(async (id: string) => {
     const db = dbRef.current;
     if (!db) return;
+    let acknowledgedTouch: ScheduledTouch | undefined;
     setTouches((prev) => {
       const next = prev.map((touch) =>
-        touch.id === id ? { ...touch, acknowledged: true } : touch
+        touch.id === id
+          ? (() => {
+              const updated = { ...touch, acknowledged: true };
+              acknowledgedTouch = updated;
+              void persistTouch(db, updated);
+              return updated;
+            })()
+          : touch
       );
-      next
-        .filter((touch) => touch.id === id)
-        .forEach((touch) => {
-          void persistTouch(db, touch);
-        });
       return next;
     });
-  }, []);
+    if (acknowledgedTouch) {
+      const person = people.find((item) => item.id === acknowledgedTouch?.personId);
+      const actionSummary = acknowledgedTouch.note
+        ? acknowledgedTouch.note
+        : person
+          ? `Reached out to ${person.name}`
+          : "Marked a routine touch complete";
+      await updateSettings((prev) => {
+        const history = [
+          {
+            id: crypto.randomUUID(),
+            personId: acknowledgedTouch?.personId,
+            personName: person?.name,
+            action: actionSummary,
+            executedAt: new Date().toISOString(),
+          },
+          ...(prev.recentExecutions ?? []),
+        ].slice(0, 10);
+        return { ...prev, recentExecutions: history };
+      });
+    }
+  }, [people, updateSettings]);
 
   const toggleNotifications = useCallback(async (enabled: boolean) => {
     const db = dbRef.current;
-    if (!db) return;
+    if (!db) return false;
+    if (peopleCount === 0) {
+      return false;
+    }
     let nextEnabled = enabled;
     if (nextEnabled && typeof window !== "undefined" && typeof Notification !== "undefined") {
       const permission = await Notification.requestPermission();
@@ -328,10 +411,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     } else if (nextEnabled) {
       nextEnabled = false;
     }
-    const nextSettings = { ...settings, notificationsEnabled: nextEnabled };
-    setSettings(nextSettings);
-    await persistSettings(db, nextSettings);
-  }, [settings]);
+    await updateSettings((prev) => ({ ...prev, notificationsEnabled: nextEnabled }));
+    return nextEnabled;
+  }, [peopleCount, updateSettings]);
 
   const value = useMemo<DataContextValue>(
     () => ({
@@ -350,6 +432,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       addRoutine,
       toggleNotifications,
       acknowledgeTouch,
+      updateSettings,
     }),
     [
       acknowledgeTouch,
@@ -367,6 +450,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       touches,
       updatePerson,
       markOnboardingDone,
+      updateSettings,
     ]
   );
 
@@ -467,6 +551,9 @@ function calculateMetrics(person: Person, upcomingTouches: ScheduledTouch[]): Re
 }
 
 function computeSuggestions(metrics: RelationshipMetrics[], people: Person[]): Suggestion[] {
+  if (metrics.length === 0 || people.length === 0) {
+    return [];
+  }
   const enriched = metrics
     .map((metric) => {
       const person = people.find((item) => item.id === metric.personId);
@@ -485,7 +572,7 @@ function computeSuggestions(metrics: RelationshipMetrics[], people: Person[]): S
     })
     .filter((item): item is Suggestion & { intensity: number } => Boolean(item))
     .sort((a, b) => b.intensity - a.intensity)
-    .slice(0, MAX_SUGGESTIONS);
+    .slice(0, Math.min(MAX_SUGGESTIONS, people.length));
 
   return enriched.map((item) => {
     const { intensity, ...rest } = item;

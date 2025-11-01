@@ -30,7 +30,19 @@ let memorySnapshot: StoreMap | null = null;
 function createDefaultSnapshot(): StoreMap {
   return {
     people: [],
-    settings: [{ id: "singleton", onboardingDone: false }],
+    settings: [
+      {
+        id: "singleton",
+        onboardingDone: true,
+        notificationsEnabled: false,
+        notificationTime: "09:00",
+        quietWeek: false,
+        calendarStatus: "disconnected",
+        favoriteGoalPerWeek: 3,
+        defaultRoutinePreset: "monthly-call",
+        recentExecutions: [],
+      },
+    ],
     routines: [],
     touches: [],
     interactions: [],
@@ -62,7 +74,7 @@ function readSnapshot(): StoreMap {
     }
     const parsed = JSON.parse(raw) as StoreMap;
     if (!parsed.settings || parsed.settings.length === 0) {
-      parsed.settings = [{ id: "singleton", onboardingDone: false }];
+      parsed.settings = createDefaultSnapshot().settings;
     }
     memorySnapshot = clone(parsed);
     return parsed;
@@ -155,13 +167,16 @@ export async function loadAll(db: LocalDatabase) {
     db.getAll("interactions"),
   ]);
 
-  const settings =
-    settingsRecords.find((item) => item.id === "singleton") ?? ({
-      id: "singleton",
-      onboardingDone: false,
-    } as SettingsRecord);
+  const defaultSettings = createDefaultSnapshot().settings[0]!;
+  const foundSettings = settingsRecords.find((item) => item.id === "singleton");
+  const settings: SettingsRecord = {
+    ...defaultSettings,
+    ...(foundSettings ?? {}),
+    id: "singleton",
+    recentExecutions: foundSettings?.recentExecutions ?? defaultSettings.recentExecutions,
+  };
 
-  if (!settingsRecords.find((item) => item.id === "singleton")) {
+  if (!foundSettings) {
     await db.put("settings", settings);
   }
 
@@ -238,5 +253,5 @@ export async function clearAllData(db: LocalDatabase) {
     db.replace("touches", []),
     db.replace("interactions", []),
   ]);
-  await db.put("settings", { id: "singleton", onboardingDone: false });
+  await db.put("settings", { id: "singleton", onboardingDone: true });
 }

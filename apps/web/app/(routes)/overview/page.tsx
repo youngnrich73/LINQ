@@ -75,7 +75,13 @@ export default function OverviewPage() {
           <p className="text-sm text-muted-foreground">Distance = recency, color = valence, dot size = frequency. Click a point for the dossier.</p>
         </CardHeader>
         <CardContent>
-          <RelationshipRadar people={people} metrics={metrics} />
+          {people.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Add someone on the People page to visualize relationship health.
+            </div>
+          ) : (
+            <RelationshipRadar people={people} metrics={metrics} />
+          )}
         </CardContent>
       </Card>
 
