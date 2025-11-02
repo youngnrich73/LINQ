@@ -8,7 +8,8 @@ import {
 } from "../../../lib/server-session";
 import { getBaseUrl } from "../../../lib/url";
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID ?? "";
+const googleClientId =
+  process.env.GOOGLE_CLIENT_ID ?? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
 const googleRedirectUri = `${getBaseUrl()}/api/auth/callback`;
 

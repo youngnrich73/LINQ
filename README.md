@@ -27,23 +27,34 @@ packages/
    npm run setup
    ```
 
-2. **Start the development servers**
+2. **Configure environment variables**
+   - Copy the example environment file and populate it with your own values:
+     ```bash
+     cp apps/web/.env.example apps/web/.env.local
+     ```
+   - Create Google OAuth 2.0 credentials in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) and
+     update `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+   - Make sure the authorized redirect URI is set to `http://localhost:3000/api/auth/callback` (or your deployed domain).
+   - Set `NEXT_PUBLIC_APP_URL` to the URL that matches the OAuth client configuration and provide secure values for
+     `AUTH_SECRET` and `DATABASE_URL`.
+
+3. **Start the development servers**
    ```bash
    npm run dev
    ```
    This runs all dev targets in parallel (e.g. `next dev`).
 
-3. **Run type checks & linting**
+4. **Run type checks & linting**
    ```bash
    npm run lint
    ```
 
-4. **Execute tests**
+5. **Execute tests**
    ```bash
    npm run test
    ```
 
-5. **Create a production build**
+6. **Create a production build**
    ```bash
    npm run build
    ```
