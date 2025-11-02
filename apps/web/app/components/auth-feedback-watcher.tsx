@@ -17,14 +17,17 @@ export function AuthFeedbackWatcher() {
     const error = params?.get("error");
     if (!error) return;
 
+    const description = params?.get("error_description");
+
     push({
-      title: "Sign-in cancelled",
-      description: getErrorMessage(error),
+      title: "Sign-in error",
+      description: getErrorMessage(error, description ?? undefined),
       variant: "destructive",
     });
 
     const nextParams = new URLSearchParams(params.toString());
     nextParams.delete("error");
+    nextParams.delete("error_description");
     const query = nextParams.toString();
     router.replace(query ? `${pathname}?${query}` : pathname);
   }, [params, pathname, push, router]);
@@ -46,19 +49,14 @@ export function AuthFeedbackWatcher() {
   return null;
 }
 
-function getErrorMessage(code: string) {
+function getErrorMessage(code: string, description?: string) {
   switch (code) {
-    case "config_error":
-      return "Sign-in is unavailable because Google credentials are not configured.";
-    case "token_exchange_failed":
-    case "profile_fetch_failed":
-    case "auth_failed":
-      return "We couldn’t complete the Google sign-in flow. Please try again.";
+    case "unauthorized_client":
+    case "provider_disabled":
+      return "Google sign-in is disabled. Add the OAuth client ID and secret in Supabase Authentication > Providers.";
     case "access_denied":
       return "Permission was denied during sign-in.";
-    case "state_mismatch":
-      return "The sign-in attempt was invalid. Please try again.";
     default:
-      return "Sign-in was cancelled. Please try again.";
+      return description?.trim() ? description : "Sign-in was cancelled. Please try again.";
   }
 }

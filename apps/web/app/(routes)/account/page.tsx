@@ -1,11 +1,24 @@
 import { redirect } from "next/navigation";
-import { getSessionFromCookies } from "../../lib/server-session";
+import { createSupabaseServerClient } from "../../lib/supabase-server";
+import { toAuthSession } from "../../lib/supabase-session";
 import { AccountDashboard } from "./account-dashboard";
 
-export default function AccountPage() {
-  const session = getSessionFromCookies();
+export default async function AccountPage() {
+  const supabase = createSupabaseServerClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
   if (!session) {
-    redirect(`/api/auth/login?callbackUrl=${encodeURIComponent("/account")}`);
+    const params = new URLSearchParams({ redirect: "/account" });
+    redirect(`/login?${params.toString()}`);
   }
-  return <AccountDashboard session={session} />;
+
+  const mapped = toAuthSession(session);
+  if (!mapped) {
+    const params = new URLSearchParams({ redirect: "/account" });
+    redirect(`/login?${params.toString()}`);
+  }
+
+  return <AccountDashboard session={mapped} />;
 }
