@@ -49,15 +49,16 @@ export function AuthFeedbackWatcher() {
 function getErrorMessage(code: string) {
   switch (code) {
     case "config_error":
-      return "Sign-in is unavailable because Google credentials are not configured.";
-    case "token_exchange_failed":
-    case "profile_fetch_failed":
+      return "Sign-in is unavailable because Supabase credentials are not configured.";
     case "auth_failed":
-      return "We couldn’t complete the Google sign-in flow. Please try again.";
+    case "user_fetch_failed":
+      return "We couldn’t verify your magic link. Please try again.";
+    case "missing_token":
+      return "The magic link is missing information. Request a new one to sign in.";
+    case "unsupported_flow":
+      return "This sign-in link isn’t supported. Request a new magic link.";
     case "access_denied":
       return "Permission was denied during sign-in.";
-    case "state_mismatch":
-      return "The sign-in attempt was invalid. Please try again.";
     default:
       return "Sign-in was cancelled. Please try again.";
   }

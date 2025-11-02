@@ -107,7 +107,7 @@ export function AccountDashboard({ session }: { session: AuthSession }) {
       <Card>
         <CardHeader>
           <CardTitle>Profile & session</CardTitle>
-          <p className="text-sm text-muted-foreground">Signed in with Google</p>
+          <p className="text-sm text-muted-foreground">Signed in with your email</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

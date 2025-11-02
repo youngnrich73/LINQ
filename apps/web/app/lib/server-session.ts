@@ -1,13 +1,10 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { AuthSession, AuthUser } from "./auth-types";
 
 const SESSION_COOKIE = "linq_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
-const STATE_COOKIE = "linq_auth_state";
-const STATE_MAX_AGE_SECONDS = 60 * 10; // 10 minutes
-
 const authSecret =
   process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? process.env.JWT_SECRET ?? "development-secret";
 
@@ -98,45 +95,7 @@ export function getSessionFromCookies(): AuthSession | null {
   return readSessionToken(cookieValue);
 }
 
-export function createStateCookiePayload(callbackUrl: string) {
-  const state = randomBytes(16).toString("hex");
-  const payload = { state, callbackUrl };
-  return { state, encoded: toBase64Url(JSON.stringify(payload)) };
-}
-
-export function readStateCookiePayload(value: string | undefined | null): { state: string; callbackUrl: string } | null {
-  if (!value) return null;
-  try {
-    return JSON.parse(fromBase64Url(value)) as { state: string; callbackUrl: string };
-  } catch {
-    return null;
-  }
-}
-
-export function attachStateCookie(response: NextResponse, payload: string) {
-  response.cookies.set({
-    name: STATE_COOKIE,
-    value: payload,
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: STATE_MAX_AGE_SECONDS,
-    path: "/",
-  });
-}
-
-export function readStateCookie(): string | undefined {
-  return cookies().get(STATE_COOKIE)?.value;
-}
-
-export function clearStateCookie(response: NextResponse) {
-  response.cookies.delete({ name: STATE_COOKIE, path: "/" });
-}
-
 export function sessionCookieName() {
   return SESSION_COOKIE;
 }
 
-export function stateCookieName() {
-  return STATE_COOKIE;
-}

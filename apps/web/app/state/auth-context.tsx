@@ -25,7 +25,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function getLoginUrl(callbackUrl?: string) {
-  const url = new URL("/api/auth/login", window.location.origin);
+  const url = new URL("/login", window.location.origin);
   if (callbackUrl) {
     url.searchParams.set("callbackUrl", callbackUrl);
   }

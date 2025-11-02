@@ -32,11 +32,14 @@ packages/
      ```bash
      cp apps/web/.env.example apps/web/.env.local
      ```
-   - Create Google OAuth 2.0 credentials in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) and
-     update `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
-   - Make sure the authorized redirect URI is set to `http://localhost:3000/api/auth/callback` (or your deployed domain).
-   - Set `NEXT_PUBLIC_APP_URL` to the URL that matches the OAuth client configuration and provide secure values for
-     `AUTH_SECRET` and `DATABASE_URL`.
+   - Create a [Supabase](https://supabase.com/) project and copy the project's URL and anon key into
+     `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+   - Generate a service role key from the Supabase dashboard and set `SUPABASE_SERVICE_ROLE_KEY`. Keep this value secret
+     and never expose it to the browser.
+   - In Supabase Authentication settings, add `http://localhost:3000/api/auth/callback` (or your deployed domain) to the
+     list of redirect URLs so magic links can return to the app.
+   - Set `NEXT_PUBLIC_APP_URL` to the URL where the app runs and provide secure values for `AUTH_SECRET` and
+     `DATABASE_URL`.
 
 3. **Start the development servers**
    ```bash
