@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import type { AuthSession } from "../lib/auth-types";
+import { createSupabaseBrowserClient } from "../lib/supabase-browser";
+import { toAuthSession } from "../lib/supabase-session";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -24,34 +26,29 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function getLoginUrl(callbackUrl?: string) {
-  const url = new URL("/api/auth/login", window.location.origin);
-  if (callbackUrl) {
-    url.searchParams.set("callbackUrl", callbackUrl);
+function buildLoginPath(callbackUrl?: string) {
+  if (!callbackUrl) {
+    return "/login";
   }
-  return url.toString();
-}
-
-async function requestLogout() {
-  const response = await fetch("/api/auth/logout", { method: "POST" });
-  if (!response.ok) {
-    throw new Error("logout_failed");
-  }
-}
-
-async function fetchSession(): Promise<AuthSession | null> {
-  const response = await fetch("/api/auth/session", { credentials: "include" });
-  if (!response.ok) {
-    return null;
-  }
-  const payload = (await response.json()) as { session: AuthSession | null };
-  return payload.session ?? null;
+  const params = new URLSearchParams({ redirect: callbackUrl });
+  return `/login?${params.toString()}`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const pending = useRef<Promise<void> | null>(null);
+
+  const syncSession = useCallback(async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      throw error;
+    }
+    const nextSession = toAuthSession(data.session ?? null);
+    setSession(nextSession);
+    setStatus(nextSession ? "authenticated" : "unauthenticated");
+  }, [supabase]);
 
   const refresh = useCallback(async () => {
     if (pending.current) {
@@ -60,15 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const request = (async () => {
       setStatus("loading");
       try {
-        const nextSession = await fetchSession();
-        if (nextSession) {
-          setSession(nextSession);
-          setStatus("authenticated");
-        } else {
-          setSession(null);
-          setStatus("unauthenticated");
-        }
-      } catch {
+        await syncSession();
+      } catch (error) {
+        console.error("Failed to refresh Supabase session", error);
         setSession(null);
         setStatus("unauthenticated");
       } finally {
@@ -77,32 +68,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
     pending.current = request;
     return request;
-  }, []);
+  }, [syncSession]);
 
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      const mapped = toAuthSession(nextSession);
+      setSession(mapped);
+      setStatus(mapped ? "authenticated" : "unauthenticated");
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, [refresh, supabase]);
 
-  const login = useCallback(
-    (callbackUrl?: string) => {
-      window.location.href = getLoginUrl(callbackUrl);
-    },
-    []
-  );
+  const login = useCallback((callbackUrl?: string) => {
+    const destination = buildLoginPath(callbackUrl);
+    window.location.assign(destination);
+  }, []);
 
   const logout = useCallback(
     async (redirectTo?: string) => {
+      setStatus("loading");
       try {
-        await requestLogout();
-      } finally {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          throw error;
+        }
+        setSession(null);
+        setStatus("unauthenticated");
         if (redirectTo) {
           window.location.href = redirectTo;
-        } else {
-          await refresh();
+          return;
         }
+      } catch (error) {
+        console.error("Supabase sign-out failed", error);
+        setStatus("unauthenticated");
+        setSession(null);
+        throw error instanceof Error ? error : new Error("logout_failed");
       }
+      await refresh();
     },
-    [refresh]
+    [refresh, supabase]
   );
 
   const value = useMemo<AuthContextValue>(
