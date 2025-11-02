@@ -5,8 +5,7 @@ import {
   stateCookieName,
 } from "../../../lib/server-session";
 import { getBaseUrl, sanitizeRelativeRedirect } from "../../../lib/url";
-
-const googleClientId = process.env.GOOGLE_CLIENT_ID ?? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+import { getGoogleClientId } from "../../../lib/google-oauth";
 const googleRedirectUri = `${getBaseUrl()}/api/auth/callback`;
 
 function buildErrorRedirect(callbackUrl: string, code: string) {
@@ -18,6 +17,7 @@ function buildErrorRedirect(callbackUrl: string, code: string) {
 export async function GET(request: NextRequest) {
   const callbackParam = request.nextUrl.searchParams.get("callbackUrl");
   const callbackUrl = sanitizeRelativeRedirect(callbackParam);
+  const googleClientId = getGoogleClientId();
   if (!googleClientId) {
     return buildErrorRedirect(callbackUrl, "config_error");
   }

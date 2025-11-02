@@ -7,9 +7,8 @@ import {
   readStateCookiePayload,
 } from "../../../lib/server-session";
 import { getBaseUrl } from "../../../lib/url";
+import { getGoogleClientId } from "../../../lib/google-oauth";
 
-const googleClientId =
-  process.env.GOOGLE_CLIENT_ID ?? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET ?? "";
 const googleRedirectUri = `${getBaseUrl()}/api/auth/callback`;
 
@@ -19,9 +18,9 @@ function redirectWithError(callbackUrl: string, code: string) {
   return NextResponse.redirect(destination);
 }
 
-async function exchangeCodeForTokens(code: string) {
+async function exchangeCodeForTokens(code: string, clientId: string) {
   const body = new URLSearchParams({
-    client_id: googleClientId,
+    client_id: clientId,
     client_secret: googleClientSecret,
     code,
     redirect_uri: googleRedirectUri,
@@ -67,6 +66,7 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const error = request.nextUrl.searchParams.get("error");
   const callbackUrl = storedState?.callbackUrl ?? "/overview";
+  const googleClientId = getGoogleClientId();
 
   if (!storedState || !state || storedState.state !== state) {
     return redirectWithError(callbackUrl, "state_mismatch");
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
+    const tokens = await exchangeCodeForTokens(code, googleClientId);
     if (!tokens.access_token) {
       throw new Error("token_exchange_failed");
     }
