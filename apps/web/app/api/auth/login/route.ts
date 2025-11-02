@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
   let supabase;
   try {
     supabase = getSupabaseServiceRoleClient();
-  } catch {
+  } catch (error) {
+    console.error("Supabase credentials are not configured for magic links.", error);
     return NextResponse.json({ error: "not_configured" }, { status: 500 });
   }
 

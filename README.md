@@ -35,7 +35,8 @@ packages/
    - Create a [Supabase](https://supabase.com/) project and copy the project's URL and anon key into
      `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
    - Generate a service role key from the Supabase dashboard and set `SUPABASE_SERVICE_ROLE_KEY`. Keep this value secret
-     and never expose it to the browser.
+     and never expose it to the browser. If you prefer not to use the service role key locally, set `SUPABASE_ANON_KEY`
+     (or rely on `NEXT_PUBLIC_SUPABASE_ANON_KEY`) so the server can still send magic links.
    - In Supabase Authentication settings, add `http://localhost:3000/api/auth/callback` (or your deployed domain) to the
      list of redirect URLs so magic links can return to the app.
    - Set `NEXT_PUBLIC_APP_URL` to the URL where the app runs and provide secure values for `AUTH_SECRET` and
