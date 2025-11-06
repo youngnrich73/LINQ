@@ -27,23 +27,55 @@ packages/
    npm run setup
    ```
 
-2. **Start the development servers**
+2. **Configure environment variables**
+   - Copy the example environment file and populate it with your own values:
+     ```bash
+     cp apps/web/.env.example apps/web/.env.local
+     ```
+   - Create a [Supabase](https://supabase.com/) project and copy the project's URL and anon key into
+     `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+   - Generate a service role key from the Supabase dashboard and set `SUPABASE_SERVICE_ROLE_KEY`. Keep this value secret
+     and never expose it to the browser. If you prefer not to use the service role key locally, set `SUPABASE_ANON_KEY`
+     (or rely on `NEXT_PUBLIC_SUPABASE_ANON_KEY`) so the server can still send magic links.
+   - In Supabase Authentication settings, add `http://localhost:3000/api/auth/callback` (or your deployed domain) to the
+     list of redirect URLs so magic links can return to the app.
+   - Set `NEXT_PUBLIC_APP_URL` to the URL where the app runs and provide secure values for `AUTH_SECRET` and
+     `DATABASE_URL`.
+
+### Authentication environment variables
+
+| Variable | Purpose | Scope |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Base URL of your Supabase project used by the browser and server. | Public |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key used by the client to talk to Supabase Auth. | Public |
+| `SUPABASE_ANON_KEY` | Optional server-side anon key. Set if you do not want to reuse the public key on the server. | Server |
+| `SUPABASE_SERVICE_ROLE_KEY` | Optional service role key for administrative tasks. Required only for endpoints that need elevated Supabase access. | Server (secret) |
+| `NEXT_PUBLIC_APP_URL` | Fully-qualified origin of your deployment (e.g. `https://your-app.vercel.app`). Used to build redirect URLs. | Public |
+| `AUTH_SECRET` | Secret string for signing LINQ session cookies. | Server (secret) |
+
+### Google OAuth configuration
+
+- Enable the Google provider inside Supabase Authentication and supply the Google client ID and secret in the Supabase dashboard.
+- Ensure `NEXT_PUBLIC_APP_URL` matches the production domain (e.g. the Vercel deployment) so Supabase can redirect back to `/api/auth/callback`.
+- Add the production callback URL (`https://your-domain/api/auth/callback`) to both Supabase and the Google Cloud console allowed redirect URL lists.
+
+3. **Start the development servers**
    ```bash
    npm run dev
    ```
    This runs all dev targets in parallel (e.g. `next dev`).
 
-3. **Run type checks & linting**
+4. **Run type checks & linting**
    ```bash
    npm run lint
    ```
 
-4. **Execute tests**
+5. **Execute tests**
    ```bash
    npm run test
    ```
 
-5. **Create a production build**
+6. **Create a production build**
    ```bash
    npm run build
    ```

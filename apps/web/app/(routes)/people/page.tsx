@@ -7,6 +7,12 @@ import { useData } from "../../state/data-context";
 import type { PersonGroup } from "../../state/types";
 
 const GROUPS: (PersonGroup | "All")[] = ["All", "Inner", "Close", "Work"];
+const GROUP_LABELS: Record<(typeof GROUPS)[number], string> = {
+  All: "전체",
+  Inner: "핵심",
+  Close: "가까운 친구",
+  Work: "업무",
+};
 const TARGETS = [0.5, 1, 1.5, 2];
 
 export default function PeoplePage() {
@@ -60,11 +66,11 @@ export default function PeoplePage() {
 
   const handleAdd = async () => {
     if (!name.trim()) {
-      setFormError("Enter a name to add someone to your radar.");
+      setFormError("이름을 입력해 관계 레이더에 추가하세요.");
       return;
     }
     if (people.length >= 12) {
-      setFormError("You can favorite up to 12 people for now.");
+      setFormError("현재는 최대 12명까지만 즐겨찾을 수 있어요.");
       return;
     }
     setSubmitting(true);
@@ -80,7 +86,7 @@ export default function PeoplePage() {
   const handleEdit = async () => {
     if (!editingId) return;
     if (!editName.trim()) {
-      setEditError("Name cannot be empty.");
+      setEditError("이름은 비워둘 수 없어요.");
       return;
     }
     setSavingEdit(true);
@@ -101,15 +107,15 @@ export default function PeoplePage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Manage focus list</CardTitle>
+          <CardTitle>중점 인물 관리</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Add or edit the people you want to keep warm. Updates immediately affect radar scoring and routines.
+            따뜻하게 유지하고 싶은 사람을 추가하거나 편집하면 레이더 점수와 루틴에 바로 반영돼요.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <label className="flex flex-col text-sm">
-              <span className="font-medium">Name</span>
+              <span className="font-medium">이름</span>
               <input
                 value={name}
                 onChange={(event) => {
@@ -119,13 +125,13 @@ export default function PeoplePage() {
                   }
                 }}
                 className="mt-1 rounded-md border border-border bg-background px-3 py-2"
-                placeholder="Ada Lovelace"
-                aria-label="Person name"
+                placeholder="김민지"
+                aria-label="사람 이름"
                 disabled={people.length >= 12}
               />
             </label>
             <label className="flex flex-col text-sm">
-              <span className="font-medium">Relationship lane</span>
+              <span className="font-medium">관계 구분</span>
               <select
                 value={newGroup}
                 onChange={(event) => {
@@ -135,18 +141,18 @@ export default function PeoplePage() {
                   }
                 }}
                 className="mt-1 rounded-md border border-border bg-background px-3 py-2"
-                aria-label="Relationship lane"
+                aria-label="관계 구분"
                 disabled={people.length >= 12}
               >
                 {GROUPS.filter((option): option is PersonGroup => option !== "All").map((option) => (
                   <option key={option} value={option}>
-                    {option}
+                    {GROUP_LABELS[option]}
                   </option>
                 ))}
               </select>
             </label>
             <label className="flex flex-col text-sm">
-              <span className="font-medium">Target touches / week</span>
+              <span className="font-medium">주간 목표 접점</span>
               <select
                 value={target}
                 onChange={(event) => {
@@ -156,7 +162,7 @@ export default function PeoplePage() {
                   }
                 }}
                 className="mt-1 rounded-md border border-border bg-background px-3 py-2"
-                aria-label="Target touches per week"
+                aria-label="주간 목표 접점 수"
                 disabled={people.length >= 12}
               >
                 {TARGETS.map((option) => (
@@ -169,9 +175,9 @@ export default function PeoplePage() {
           </div>
           {formError ? <p className="text-sm text-destructive">{formError}</p> : null}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{people.length} / 12 favorites</p>
+            <p className="text-sm text-muted-foreground">즐겨찾기 {people.length} / 12명</p>
             <Button onClick={() => void handleAdd()} disabled={submitting || people.length >= 12}>
-              {submitting ? "Adding…" : "Add person"}
+              {submitting ? "추가 중…" : "사람 추가"}
             </Button>
           </div>
         </CardContent>
@@ -179,9 +185,9 @@ export default function PeoplePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>People</CardTitle>
+          <CardTitle>사람 목록</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Search, filter, and drill into a relationship dossier.
+            검색하고 필터링해 관계 정보를 살펴보세요.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -190,8 +196,8 @@ export default function PeoplePage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full max-w-sm rounded-md border border-border bg-background px-3 py-2 text-sm"
-              placeholder="Search by name"
-              aria-label="Search people"
+              placeholder="이름으로 검색"
+              aria-label="사람 검색"
             />
             <div className="flex items-center gap-2">
               {GROUPS.map((option) => (
@@ -201,7 +207,7 @@ export default function PeoplePage() {
                   variant={group === option ? "secondary" : "outline"}
                   onClick={() => setGroup(option)}
                 >
-                  {option}
+                  {GROUP_LABELS[option] ?? option}
                 </Button>
               ))}
             </div>
@@ -210,13 +216,13 @@ export default function PeoplePage() {
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Group</th>
-                  <th className="px-3 py-2">Score</th>
-                  <th className="px-3 py-2">Recency</th>
-                  <th className="px-3 py-2">Next touch</th>
-                  <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Actions</th>
+                  <th className="px-3 py-2">이름</th>
+                  <th className="px-3 py-2">구분</th>
+                  <th className="px-3 py-2">점수</th>
+                  <th className="px-3 py-2">최근 접점</th>
+                  <th className="px-3 py-2">다음 접점</th>
+                  <th className="px-3 py-2">상태</th>
+                  <th className="px-3 py-2">작업</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,9 +235,9 @@ export default function PeoplePage() {
                       onClick={() => router.push(`/people/${person.id}`)}
                     >
                       <td className="px-3 py-3 font-medium">{person.name}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{person.group}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{GROUP_LABELS[person.group] ?? person.group}</td>
                       <td className="px-3 py-3">{metric?.totalScore ?? "—"}</td>
-                      <td className="px-3 py-3">{metric?.lastInteractionSummary ?? "No log"}</td>
+                      <td className="px-3 py-3">{metric?.lastInteractionSummary ?? "기록 없음"}</td>
                       <td className="px-3 py-3">{metric?.nextRecommendedTouch ?? "—"}</td>
                       <td className="px-3 py-3">{metric?.statusLabel ?? "—"}</td>
                       <td className="px-3 py-3">
@@ -244,7 +250,7 @@ export default function PeoplePage() {
                               setEditingId(person.id);
                             }}
                           >
-                            Edit
+                            편집
                           </Button>
                           <Button
                             size="sm"
@@ -254,7 +260,7 @@ export default function PeoplePage() {
                               router.push(`/people/${person.id}`);
                             }}
                           >
-                            Open dossier
+                            프로필 열기
                           </Button>
                         </div>
                       </td>
@@ -264,7 +270,7 @@ export default function PeoplePage() {
               </tbody>
             </table>
             {filtered.length === 0 ? (
-              <p className="mt-6 text-center text-sm text-muted-foreground">No people match your filters yet.</p>
+              <p className="mt-6 text-center text-sm text-muted-foreground">필터에 맞는 사람이 아직 없어요.</p>
             ) : null}
           </div>
         </CardContent>
@@ -273,13 +279,13 @@ export default function PeoplePage() {
       {editingId ? (
         <Card>
           <CardHeader>
-            <CardTitle>Edit person</CardTitle>
-            <p className="text-sm text-muted-foreground">Adjust the relationship lane or cadence for this contact.</p>
+            <CardTitle>사람 편집</CardTitle>
+            <p className="text-sm text-muted-foreground">이 연락처의 관계 구분과 접점 빈도를 조정하세요.</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
               <label className="flex flex-col text-sm">
-                <span className="font-medium">Name</span>
+                <span className="font-medium">이름</span>
                 <input
                   value={editName}
                   onChange={(event) => {
@@ -289,11 +295,11 @@ export default function PeoplePage() {
                     }
                   }}
                   className="mt-1 rounded-md border border-border bg-background px-3 py-2"
-                  aria-label="Edit name"
+                  aria-label="이름 편집"
                 />
               </label>
               <label className="flex flex-col text-sm">
-                <span className="font-medium">Relationship lane</span>
+                <span className="font-medium">관계 구분</span>
                 <select
                   value={editGroup}
                   onChange={(event) => {
@@ -303,17 +309,17 @@ export default function PeoplePage() {
                     }
                   }}
                   className="mt-1 rounded-md border border-border bg-background px-3 py-2"
-                  aria-label="Edit relationship lane"
+                  aria-label="관계 구분 편집"
                 >
                   {GROUPS.filter((option): option is PersonGroup => option !== "All").map((option) => (
                     <option key={option} value={option}>
-                      {option}
+                      {GROUP_LABELS[option]}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="flex flex-col text-sm">
-                <span className="font-medium">Target touches / week</span>
+                <span className="font-medium">주간 목표 접점</span>
                 <select
                   value={editTarget}
                   onChange={(event) => {
@@ -323,7 +329,7 @@ export default function PeoplePage() {
                     }
                   }}
                   className="mt-1 rounded-md border border-border bg-background px-3 py-2"
-                  aria-label="Edit target touches per week"
+                  aria-label="주간 목표 접점 수 편집"
                 >
                   {TARGETS.map((option) => (
                     <option key={option} value={option}>
@@ -336,10 +342,10 @@ export default function PeoplePage() {
             {editError ? <p className="text-sm text-destructive">{editError}</p> : null}
             <div className="flex items-center justify-end gap-2">
               <Button variant="outline" onClick={() => setEditingId(null)}>
-                Cancel
+                취소
               </Button>
               <Button onClick={() => void handleEdit()} disabled={savingEdit}>
-                {savingEdit ? "Saving…" : "Save changes"}
+                {savingEdit ? "저장 중…" : "변경 사항 저장"}
               </Button>
             </div>
           </CardContent>

@@ -6,6 +6,12 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from "@linq/ui";
 import { useData } from "../../state/data-context";
 import type { RoutineRule } from "../../state/types";
 
+const RULE_TYPE_LABELS: Record<RoutineRule["type"], string> = {
+  weekly: "주간",
+  monthly: "월간",
+  custom: "맞춤",
+};
+
 export default function RoutinesPage() {
   const { people, addRoutine, routines, touches, settings, toggleNotifications } = useData();
   const [personId, setPersonId] = useState<string>("all");
@@ -13,8 +19,8 @@ export default function RoutinesPage() {
   const [count, setCount] = useState<number>(1);
   const [note, setNote] = useState("");
 
-  const personOptions = useMemo(() => [{ id: "all", name: "Any" }, ...people], [people]);
-  const personName = (id: string | undefined) => people.find((person) => person.id === id)?.name ?? "Any";
+  const personOptions = useMemo(() => [{ id: "all", name: "전체" }, ...people], [people]);
+  const personName = (id: string | undefined) => people.find((person) => person.id === id)?.name ?? "전체";
   const hasPeople = people.length > 0;
 
   const relatedTouches = useMemo(() => {
@@ -35,13 +41,13 @@ export default function RoutinesPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Create a routine</CardTitle>
-          <p className="text-sm text-muted-foreground">Generate four weeks of planned touches for the people who matter.</p>
+          <CardTitle>루틴 만들기</CardTitle>
+          <p className="text-sm text-muted-foreground">소중한 사람들을 위해 4주치 접점을 미리 계획하세요.</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-4">
             <label className="text-sm">
-              <span className="font-medium">Person</span>
+              <span className="font-medium">사람</span>
               <select
                 value={personId}
                 onChange={(event) => setPersonId(event.target.value)}
@@ -56,20 +62,20 @@ export default function RoutinesPage() {
               </select>
             </label>
             <label className="text-sm">
-              <span className="font-medium">Cadence</span>
+              <span className="font-medium">빈도</span>
               <select
                 value={ruleType}
                 onChange={(event) => setRuleType(event.target.value as RoutineRule["type"])}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
                 disabled={!hasPeople}
               >
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="custom">Custom (days)</option>
+                <option value="weekly">주간</option>
+                <option value="monthly">월간</option>
+                <option value="custom">맞춤(일)</option>
               </select>
             </label>
             <label className="text-sm">
-              <span className="font-medium">Count</span>
+              <span className="font-medium">횟수</span>
               <input
                 type="number"
                 min={1}
@@ -80,22 +86,22 @@ export default function RoutinesPage() {
               />
             </label>
             <label className="text-sm">
-              <span className="font-medium">Note</span>
+              <span className="font-medium">메모</span>
               <input
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2"
-                placeholder="Coffee chat, gratitude note, etc."
+                placeholder="예: 커피챗, 감사 메시지"
                 disabled={!hasPeople}
               />
             </label>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Button onClick={() => void handleCreate()} disabled={!hasPeople}>
-              Generate touches
+              접점 생성
             </Button>
             {!hasPeople ? (
-              <p className="text-xs text-muted-foreground">Add someone on the People page to enable routines.</p>
+              <p className="text-xs text-muted-foreground">People 페이지에서 사람을 추가하면 루틴을 설정할 수 있어요.</p>
             ) : null}
           </div>
         </CardContent>
@@ -103,8 +109,8 @@ export default function RoutinesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Notification preferences</CardTitle>
-          <p className="text-sm text-muted-foreground">Enable browser notifications for D-1 reminders.</p>
+          <CardTitle>알림 설정</CardTitle>
+          <p className="text-sm text-muted-foreground">D-1 알림을 받으려면 브라우저 알림을 켜세요.</p>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-3">
           <Button
@@ -112,26 +118,26 @@ export default function RoutinesPage() {
             onClick={() => void toggleNotifications(!settings.notificationsEnabled)}
             disabled={!hasPeople}
           >
-            {settings.notificationsEnabled ? "Disable" : "Enable"} notifications
+            {settings.notificationsEnabled ? "알림 끄기" : "알림 켜기"}
           </Button>
           <p className="text-xs text-muted-foreground">
             {!hasPeople
-              ? "Add at least one person to enable reminders."
+              ? "사람을 최소 한 명 추가하면 알림을 켤 수 있어요."
               : settings.notificationsEnabled
-                ? "We’ll ping you one day before a scheduled touch."
-                : "Notifications stay on-device and can be toggled any time."}
+                ? "예약된 접점 하루 전에 알려드려요."
+                : "알림은 이 기기에서만 동작하며 언제든지 바꿀 수 있어요."}
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Generated routines</CardTitle>
-          <p className="text-sm text-muted-foreground">Next four weeks of touches with duplicates removed.</p>
+          <CardTitle>생성된 루틴</CardTitle>
+          <p className="text-sm text-muted-foreground">중복을 제거한 앞으로 4주간의 접점이에요.</p>
         </CardHeader>
         <CardContent className="space-y-4">
           {relatedTouches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No routines yet. Create one above to populate the list.</p>
+            <p className="text-sm text-muted-foreground">아직 루틴이 없어요. 위에서 새로 만들어 보세요.</p>
           ) : (
             relatedTouches.map(({ routine, touches }) => (
               <section key={routine.id} className="rounded-lg border border-border/60 bg-card/40 p-4">
@@ -139,20 +145,20 @@ export default function RoutinesPage() {
                   <div>
                     <h3 className="text-base font-semibold">{personName(routine.personId)}</h3>
                     <p className="text-xs text-muted-foreground">
-                      {routine.rule.type} · {routine.rule.count} {routine.rule.type === "custom" ? "days" : "per period"}
+                      {RULE_TYPE_LABELS[routine.rule.type]} · {routine.rule.count} {routine.rule.type === "custom" ? "일 간격" : "회/주기"}
                     </p>
                   </div>
                   {routine.note ? <span className="text-sm text-muted-foreground">{routine.note}</span> : null}
                 </header>
                 <ul className="mt-3 space-y-2 text-sm">
                   {touches.length === 0 ? (
-                    <li className="text-muted-foreground">No upcoming touches inside the horizon.</li>
+                    <li className="text-muted-foreground">예정된 접점이 없습니다.</li>
                   ) : (
                     touches.map((touch) => (
                       <li key={touch.id} className="flex items-center justify-between rounded-md border border-border/50 bg-background/40 px-3 py-2">
                         <span>{formatDisplay(new Date(touch.date), "PPPP")}</span>
                         <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                          {touch.acknowledged ? "Ready" : "Pending"}
+                          {touch.acknowledged ? "확인 완료" : "예정"}
                         </span>
                       </li>
                     ))

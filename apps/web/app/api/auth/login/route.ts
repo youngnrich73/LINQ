@@ -1,46 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  attachStateCookie,
-  createStateCookiePayload,
-  stateCookieName,
-} from "../../../lib/server-session";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseConfigError, getSupabaseServerClient } from "../../../lib/supabase";
 import { getBaseUrl, sanitizeRelativeRedirect } from "../../../lib/url";
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleRedirectUri = `${getBaseUrl()}/api/auth/callback`;
-
-function buildErrorRedirect(callbackUrl: string, code: string) {
-  const destination = new URL(callbackUrl, getBaseUrl());
-  destination.searchParams.set("error", code);
-  return NextResponse.redirect(destination);
+function buildRedirectUrl(callbackUrl: string) {
+  const destination = new URL("/login", getBaseUrl());
+  destination.searchParams.set("callbackUrl", callbackUrl);
+  return destination;
 }
 
-export async function GET(request: NextRequest) {
-  const callbackParam = request.nextUrl.searchParams.get("callbackUrl");
-  const callbackUrl = sanitizeRelativeRedirect(callbackParam);
-  if (!googleClientId) {
-    return buildErrorRedirect(callbackUrl, "config_error");
+export function GET(request: NextRequest) {
+  const callbackUrl = sanitizeRelativeRedirect(request.nextUrl.searchParams.get("callbackUrl"));
+  return NextResponse.redirect(buildRedirectUrl(callbackUrl));
+}
+
+export async function POST(request: NextRequest) {
+  let email: string | undefined;
+  let callbackUrl: string | undefined;
+
+  try {
+    const payload = (await request.json()) as {
+      email?: unknown;
+      callbackUrl?: unknown;
+    };
+    email = typeof payload.email === "string" ? payload.email.trim() : undefined;
+    callbackUrl = typeof payload.callbackUrl === "string" ? payload.callbackUrl : undefined;
+  } catch {
+    return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
   }
 
-  const { state, encoded } = createStateCookiePayload(callbackUrl);
-  const authParams = new URLSearchParams({
-    client_id: googleClientId,
-    redirect_uri: googleRedirectUri,
-    response_type: "code",
-    scope: "openid email profile",
-    prompt: "consent",
-    access_type: "offline",
-    state,
+  if (!email) {
+    return NextResponse.json({ error: "missing_email" }, { status: 400 });
+  }
+
+  email = email.toLowerCase();
+
+  const sanitizedCallback = sanitizeRelativeRedirect(callbackUrl);
+  const redirect = new URL("/api/auth/callback", getBaseUrl());
+  redirect.searchParams.set("callbackUrl", sanitizedCallback);
+
+  let supabase: SupabaseClient;
+  try {
+    supabase = getSupabaseServerClient();
+  } catch (error) {
+    if (error instanceof SupabaseConfigError) {
+      console.error(
+        "Supabase configuration error while sending magic link.",
+        error.missingVariables.length ? { missing: error.missingVariables } : { code: error.code }
+      );
+      return NextResponse.json({ error: error.code }, { status: 500 });
+    }
+    throw error;
+  }
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: redirect.toString(),
+    },
   });
 
-  const redirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
-  const response = NextResponse.redirect(redirectUrl);
-  attachStateCookie(response, encoded);
-  return response;
-}
+  if (error) {
+    return NextResponse.json({ error: error.message ?? "magic_link_failed" }, { status: 400 });
+  }
 
-export function DELETE() {
-  const response = NextResponse.json({ cleared: true });
-  response.cookies.delete({ name: stateCookieName(), path: "/" });
-  return response;
+  return NextResponse.json({ success: true });
 }
