@@ -13,7 +13,7 @@ export function Sidebar() {
       <div className="space-y-6">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Navigate
+            메뉴
           </p>
           <nav className="mt-4 space-y-2">
             {navigationItems.map((item) => {
