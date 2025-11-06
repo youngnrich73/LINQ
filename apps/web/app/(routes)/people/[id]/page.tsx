@@ -43,12 +43,12 @@ export default function PersonDetailPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Not found</CardTitle>
+          <CardTitle>찾을 수 없어요</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">We could not find that person. Go back to the list.</p>
-          <Button className="mt-3" onClick={() => router.push("/people")}>
-            Back to people
+          <p className="text-sm text-muted-foreground">해당 사람을 찾을 수 없어요. 목록으로 돌아가세요.</p>
+          <Button className="mt-3" onClick={() => router.push("/people")}> 
+            사람 목록으로 돌아가기
           </Button>
         </CardContent>
       </Card>
@@ -57,7 +57,7 @@ export default function PersonDetailPage() {
 
   const handleNextStep = async () => {
     setNextStepLoading(true);
-    const template = suggestion?.template ?? `Ping ${person.name} with a quick note to stay connected.`;
+    const template = suggestion?.template ?? `${person.name}님께 짧은 메시지를 보내 연결을 이어가요.`;
     await logInteraction(person.id, {
       type: "check-in",
       date: new Date().toISOString(),
@@ -73,14 +73,14 @@ export default function PersonDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">{person.name}</CardTitle>
-          <p className="text-sm text-muted-foreground">{metric?.statusLabel ?? "Monitoring"}</p>
+          <p className="text-sm text-muted-foreground">{metric?.statusLabel ?? "모니터링 중"}</p>
         </CardHeader>
         <CardContent className="grid gap-6 md:grid-cols-2">
           <section>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Timeline</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">타임라인</h3>
             <ul className="mt-3 space-y-3">
               {interactions.length === 0 ? (
-                <li className="text-sm text-muted-foreground">No interactions logged yet.</li>
+                <li className="text-sm text-muted-foreground">기록된 상호작용이 아직 없어요.</li>
               ) : (
                 interactions.map((interaction) => (
                   <li key={interaction.id} className="rounded-md border border-border/60 bg-card/50 p-3">
@@ -98,20 +98,20 @@ export default function PersonDetailPage() {
           </section>
           <section className="space-y-6">
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Conversation ratio</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">대화 비율</h3>
               <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full bg-primary"
                   style={{ width: `${conversationRatio.outgoing}%` }}
-                  aria-label={`Outgoing ${conversationRatio.outgoing}%`}
+                  aria-label={`내가 먼저 시작 ${conversationRatio.outgoing}%`}
                 />
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {conversationRatio.outgoing}% initiated • {conversationRatio.incoming}% received
+                내가 먼저 {conversationRatio.outgoing}% • 받은 연락 {conversationRatio.incoming}%
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Sentiment sparkline</h3>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">감정 추세</h3>
               <svg viewBox="0 0 200 60" className="mt-2 h-16 w-full rounded-md border border-border/60 bg-card/30">
                 {sentimentLine.length > 1 ? (
                   <polyline
@@ -128,13 +128,13 @@ export default function PersonDetailPage() {
                   />
                 ) : null}
               </svg>
-              <p className="mt-1 text-xs text-muted-foreground">Based on the last {sentimentLine.length} interactions.</p>
+              <p className="mt-1 text-xs text-muted-foreground">최근 {sentimentLine.length}번의 상호작용을 기준으로 했어요.</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Next recommended touch</h3>
-              <p className="mt-1 text-sm">{metric?.nextRecommendedTouch ?? "TBD"}</p>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">다음 추천 접점</h3>
+              <p className="mt-1 text-sm">{metric?.nextRecommendedTouch ?? "미정"}</p>
               <Button className="mt-2" onClick={() => void handleNextStep()} disabled={nextStepLoading}>
-                {nextStepLoading ? "Logging…" : "Next one step"}
+                {nextStepLoading ? "기록 중…" : "다음 접점 기록"}
               </Button>
             </div>
           </section>

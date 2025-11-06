@@ -43,7 +43,7 @@ export function RelationshipRadar({ people, metrics }: RelationshipRadarProps) {
   if (points.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        Add interactions to see the radar populate with recency, valence, and frequency.
+        상호작용을 기록하면 레이더에 최근 만남, 감정, 빈도가 채워져요.
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function RelationshipRadar({ people, metrics }: RelationshipRadarProps) {
         <svg
           viewBox="0 0 400 400"
           role="img"
-          aria-label="Relationship radar plotting recency, valence, and frequency"
+          aria-label="최근 만남·감정·빈도를 표시하는 관계 레이더"
           className="w-full rounded-lg border bg-background"
         >
           {[1, 2, 3, 4].map((ring) => (
@@ -88,7 +88,7 @@ export function RelationshipRadar({ people, metrics }: RelationshipRadarProps) {
               >
                 <button
                   type="button"
-                  aria-label={`${point.name}: score ${point.metric.totalScore}`}
+                  aria-label={`${point.name}: 점수 ${point.metric.totalScore}`}
                   className="h-full w-full rounded-full border border-transparent focus-visible:border-ring focus-visible:outline-none"
                   onClick={() => router.push(`/people/${point.id}`)}
                   onFocus={() => setFocusedId(point.id)}
@@ -101,32 +101,32 @@ export function RelationshipRadar({ people, metrics }: RelationshipRadarProps) {
           ))}
         </svg>
         <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-muted-foreground" />Distance = Recency</div>
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-gradient-to-r from-red-400 to-green-400" />Color = Valence</div>
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full border border-muted-foreground" />Dot size = Frequency</div>
+          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-muted-foreground" />거리 = 최근 만남</div>
+          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-gradient-to-r from-red-400 to-green-400" />색상 = 감정</div>
+          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full border border-muted-foreground" />점 크기 = 빈도</div>
         </div>
       </div>
       <aside aria-live="polite" className="rounded-lg border bg-card/40 p-4 text-sm">
-        <h3 className="text-base font-semibold">Details</h3>
+        <h3 className="text-base font-semibold">상세 정보</h3>
         <p className="mt-1 text-muted-foreground">
-          Hover or focus a contact to see the health summary. Click to jump into their dossier.
+          사람 위에 마우스를 올리거나 포커스하면 관계 요약을 볼 수 있어요. 클릭하면 프로필로 이동합니다.
         </p>
         {activePoint ? (
           <dl className="mt-4 space-y-2">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Name</dt>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">이름</dt>
               <dd className="text-base font-semibold">{activePoint.name}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Score</dt>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">점수</dt>
               <dd>{activePoint.metric.totalScore} ({activePoint.metric.statusLabel})</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Recency</dt>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">최근 만남</dt>
               <dd>{activePoint.metric.recencyScore}/100</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Next touch</dt>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">다음 접점</dt>
               <dd>{activePoint.metric.nextRecommendedTouch}</dd>
             </div>
           </dl>

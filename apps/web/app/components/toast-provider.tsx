@@ -103,7 +103,7 @@ function ToastViewport({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id:
             type="button"
             onClick={() => onDismiss(toast.id)}
             className="pointer-events-auto ml-3 inline-flex h-8 w-8 items-center justify-center rounded-md bg-transparent text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            aria-label="Dismiss notification"
+            aria-label="알림 닫기"
           >
             ×
           </button>

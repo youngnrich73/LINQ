@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseServiceRoleClient } from "../../../lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseConfigError, getSupabaseServerClient } from "../../../lib/supabase";
 import { getBaseUrl, sanitizeRelativeRedirect } from "../../../lib/url";
 
 function buildRedirectUrl(callbackUrl: string) {
@@ -38,12 +39,18 @@ export async function POST(request: NextRequest) {
   const redirect = new URL("/api/auth/callback", getBaseUrl());
   redirect.searchParams.set("callbackUrl", sanitizedCallback);
 
-  let supabase;
+  let supabase: SupabaseClient;
   try {
-    supabase = getSupabaseServiceRoleClient();
+    supabase = getSupabaseServerClient();
   } catch (error) {
-    console.error("Supabase credentials are not configured for magic links.", error);
-    return NextResponse.json({ error: "not_configured" }, { status: 500 });
+    if (error instanceof SupabaseConfigError) {
+      console.error(
+        "Supabase configuration error while sending magic link.",
+        error.missingVariables.length ? { missing: error.missingVariables } : { code: error.code }
+      );
+      return NextResponse.json({ error: error.code }, { status: 500 });
+    }
+    throw error;
   }
 
   const { error } = await supabase.auth.signInWithOtp({

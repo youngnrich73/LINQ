@@ -54,8 +54,8 @@ export function Header() {
       login("/overview");
     } catch (error) {
       push({
-        title: "Sign-in unavailable",
-        description: error instanceof Error ? error.message : "Please try again.",
+        title: "로그인을 진행할 수 없어요",
+        description: error instanceof Error ? error.message : "다시 시도해 주세요.",
         variant: "destructive",
       });
     }
@@ -70,7 +70,7 @@ export function Header() {
     <header className="flex h-16 items-center justify-between border-b bg-card/80 px-6 backdrop-blur">
       <div>
         <h1 className="text-lg font-semibold">LINQ Relationship OS</h1>
-        <p className="text-sm text-muted-foreground">Build stronger relationships with focused nudges.</p>
+        <p className="text-sm text-muted-foreground">집중적인 알림으로 관계를 더 단단하게 만들어 보세요.</p>
       </div>
       {status === "authenticated" && session?.user ? (
         <div className="relative flex items-center">
@@ -78,7 +78,7 @@ export function Header() {
             ref={avatarButtonRef}
             type="button"
             className="h-11 w-11 min-h-[44px] min-w-[44px] rounded-full border border-border bg-card/60 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            aria-label="Account menu"
+            aria-label="계정 메뉴"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
@@ -86,14 +86,14 @@ export function Header() {
             {session.user.image ? (
               <Image
                 src={session.user.image}
-                alt={session.user.name ?? session.user.email ?? "User avatar"}
+                alt={session.user.name ?? session.user.email ?? "사용자 아바타"}
                 width={44}
                 height={44}
                 className="h-full w-full rounded-full object-cover"
               />
             ) : (
               <span aria-hidden className="inline-flex h-full w-full items-center justify-center">
-                {initials || "ME"}
+                {initials || "나"}
               </span>
             )}
           </button>
@@ -101,7 +101,7 @@ export function Header() {
             <div
               ref={menuRef}
               role="menu"
-              aria-label="Account actions"
+              aria-label="계정 작업"
               className="absolute right-0 top-14 z-40 w-48 rounded-lg border border-border bg-popover p-1 shadow-lg"
             >
               <button
@@ -113,7 +113,7 @@ export function Header() {
                   router.push("/account");
                 }}
               >
-                My Page
+                내 정보
               </button>
               <button
                 type="button"
@@ -121,7 +121,7 @@ export function Header() {
                 className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 onClick={() => void handleLogout()}
               >
-                Log out
+                로그아웃
               </button>
             </div>
           ) : null}
@@ -133,7 +133,7 @@ export function Header() {
           className="h-11 min-h-[44px] min-w-[44px] px-4"
           onClick={handleLogin}
         >
-          Log in
+          로그인
         </Button>
       )}
     </header>
