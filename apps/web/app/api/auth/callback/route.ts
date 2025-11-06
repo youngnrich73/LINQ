@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AuthUser } from "../../../lib/auth-types";
 import { attachSessionCookie } from "../../../lib/server-session";
-import { getSupabaseServiceRoleClient } from "../../../lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseConfigError, getSupabaseServerClient } from "../../../lib/supabase";
 import { getBaseUrl, sanitizeRelativeRedirect } from "../../../lib/url";
 
 function redirectWithError(callbackUrl: string, code: string) {
@@ -30,11 +31,17 @@ export async function GET(request: NextRequest) {
     return redirectWithError(callbackUrl, "unsupported_flow");
   }
 
-  let supabase;
+  let supabase: SupabaseClient;
   try {
-    supabase = getSupabaseServiceRoleClient();
-  } catch {
-    return redirectWithError(callbackUrl, "config_error");
+    supabase = getSupabaseServerClient();
+  } catch (error) {
+    if (error instanceof SupabaseConfigError) {
+      console.error(
+        "Supabase configuration error while validating magic link.",
+        error.missingVariables.length ? { missing: error.missingVariables } : { code: error.code }
+      );
+    }
+    return redirectWithError(callbackUrl, error instanceof SupabaseConfigError ? error.code : "config_error");
   }
 
   try {
